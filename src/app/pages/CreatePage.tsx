@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Plus, Trash2, GripVertical, ChevronRight, Globe, Lock, Search } from "lucide-react";
-import { CATEGORIES, TRENDING_TOPICS, TIER_COLORS } from "../data/mockData";
+import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
 
-type Mode = "choose" | "create-new" | "rank-existing" | "preview";
+type Mode = "choose" | "create-new" | "rank-existing";
 
 interface TierItem {
   id: string;
@@ -13,15 +13,30 @@ interface TierItem {
   emoji?: string;
 }
 
-interface TierData {
-  S: TierItem[];
-  A: TierItem[];
-  B: TierItem[];
-  C: TierItem[];
-  D: TierItem[];
+interface Tier {
+  id: string;
+  label: string;
+  items: TierItem[];
 }
 
-const TIER_KEYS = ["S", "A", "B", "C", "D"] as const;
+const TIER_COLOR_PALETTE = [
+  "bg-red-500",
+  "bg-orange-400",
+  "bg-yellow-400",
+  "bg-green-500",
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-pink-500",
+  "bg-teal-500",
+];
+
+const DEFAULT_TIERS: Tier[] = [
+  { id: "tier_S", label: "S", items: [] },
+  { id: "tier_A", label: "A", items: [] },
+  { id: "tier_B", label: "B", items: [] },
+  { id: "tier_C", label: "C", items: [] },
+  { id: "tier_D", label: "D", items: [] },
+];
 
 export function CreatePage() {
   const router = useRouter();
@@ -33,23 +48,28 @@ export function CreatePage() {
   const [newItemName, setNewItemName] = useState("");
   const [newItemEmoji, setNewItemEmoji] = useState("");
   const [items, setItems] = useState<TierItem[]>([]);
-  const [tiers, setTiers] = useState<TierData>({ S: [], A: [], B: [], C: [], D: [] });
-  const [dragItem, setDragItem] = useState<{ item: TierItem; fromTier: string | null } | null>(null);
+  const [tiers, setTiers] = useState<Tier[]>(DEFAULT_TIERS);
+  const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [step, setStep] = useState(1); // 1=info, 2=items, 3=rank
   const [searchTopic, setSearchTopic] = useState("");
+
+  // Drag state
+  const dragPayload = useRef<{ item: TierItem; fromTierId: string | null } | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null); // tier.id or "unranked"
 
   const filteredTopics = TRENDING_TOPICS.filter((t) =>
     t.title.toLowerCase().includes(searchTopic.toLowerCase())
   );
 
+  // ── Item pool ────────────────────────────────────────────────────────────────
+
   const addItem = () => {
     if (!newItemName.trim()) return;
-    const newItem: TierItem = {
+    setItems([...items, {
       id: `item_${Date.now()}`,
       name: newItemName.trim(),
       emoji: newItemEmoji || undefined,
-    };
-    setItems([...items, newItem]);
+    }]);
     setNewItemName("");
     setNewItemEmoji("");
   };
@@ -59,32 +79,82 @@ export function CreatePage() {
   };
 
   const getUnrankedItems = () => {
-    const rankedIds = new Set([...tiers.S, ...tiers.A, ...tiers.B, ...tiers.C, ...tiers.D].map((i) => i.id));
+    const rankedIds = new Set(tiers.flatMap((t) => t.items).map((i) => i.id));
     return items.filter((i) => !rankedIds.has(i.id));
   };
 
-  const moveItemToTier = (item: TierItem, fromTier: string | null, toTier: string) => {
-    if (fromTier) {
-      setTiers((prev) => ({
-        ...prev,
-        [fromTier]: prev[fromTier as keyof TierData].filter((i) => i.id !== item.id),
-      }));
-    }
-    setTiers((prev) => ({
-      ...prev,
-      [toTier]: [...prev[toTier as keyof TierData], item],
-    }));
+  // ── Tier data ────────────────────────────────────────────────────────────────
+
+  const moveItemToTier = (item: TierItem, fromTierId: string | null, toTierId: string) => {
+    setTiers((prev) =>
+      prev.map((tier) => {
+        if (tier.id === fromTierId) return { ...tier, items: tier.items.filter((i) => i.id !== item.id) };
+        if (tier.id === toTierId) return { ...tier, items: [...tier.items, item] };
+        return tier;
+      })
+    );
   };
 
-  const removeFromTier = (item: TierItem, fromTier: string) => {
-    setTiers((prev) => ({
-      ...prev,
-      [fromTier]: prev[fromTier as keyof TierData].filter((i) => i.id !== item.id),
-    }));
+  const removeFromTier = (item: TierItem, tierId: string) => {
+    setTiers((prev) =>
+      prev.map((tier) =>
+        tier.id === tierId ? { ...tier, items: tier.items.filter((i) => i.id !== item.id) } : tier
+      )
+    );
   };
+
+  const addTier = () => {
+    const newId = `tier_${Date.now()}`;
+    setTiers((prev) => [...prev, { id: newId, label: "New", items: [] }]);
+    setEditingTierId(newId);
+  };
+
+  const deleteTier = (tierId: string) => {
+    setTiers((prev) => prev.filter((t) => t.id !== tierId));
+  };
+
+  const renameTier = (tierId: string, newLabel: string) => {
+    setTiers((prev) =>
+      prev.map((t) => (t.id === tierId ? { ...t, label: newLabel } : t))
+    );
+  };
+
+  // ── Drag & drop ──────────────────────────────────────────────────────────────
+
+  const handleDragStart = (item: TierItem, fromTierId: string | null) => {
+    dragPayload.current = { item, fromTierId };
+  };
+
+  const handleDragEnd = () => {
+    dragPayload.current = null;
+    setDragOverId(null);
+  };
+
+  const handleDropOnTier = (toTierId: string) => {
+    const payload = dragPayload.current;
+    if (!payload || payload.fromTierId === toTierId) {
+      setDragOverId(null);
+      return;
+    }
+    moveItemToTier(payload.item, payload.fromTierId, toTierId);
+    dragPayload.current = null;
+    setDragOverId(null);
+  };
+
+  const handleDropOnUnranked = () => {
+    const payload = dragPayload.current;
+    if (!payload || payload.fromTierId === null) {
+      setDragOverId(null);
+      return;
+    }
+    removeFromTier(payload.item, payload.fromTierId);
+    dragPayload.current = null;
+    setDragOverId(null);
+  };
+
+  // ── Misc ─────────────────────────────────────────────────────────────────────
 
   const handlePublish = () => {
-    // Simulate publish
     router.push("/");
   };
 
@@ -101,7 +171,11 @@ export function CreatePage() {
           </h1>
           {mode !== "choose" && (
             <button
-              onClick={() => { setMode("choose"); setStep(1); }}
+              onClick={() => {
+                setMode("choose"); setStep(1);
+                setTiers(DEFAULT_TIERS); setItems([]);
+                setTitle(""); setCategory("");
+              }}
               className="text-sm text-violet-500 font-medium"
             >
               Reset
@@ -111,7 +185,7 @@ export function CreatePage() {
         </div>
       </div>
 
-      {/* Choose Mode */}
+      {/* ── Choose Mode ── */}
       {mode === "choose" && (
         <div className="px-4 pt-6 pb-8 space-y-4">
           <p className="text-gray-500 text-sm text-center">What would you like to do?</p>
@@ -144,7 +218,6 @@ export function CreatePage() {
             </div>
           </button>
 
-          {/* Quick Trending */}
           <div className="mt-6">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Hot Right Now 🔥</h2>
             <div className="space-y-2">
@@ -167,7 +240,7 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* Rank Existing */}
+      {/* ── Rank Existing ── */}
       {mode === "rank-existing" && (
         <div className="px-4 pt-4 pb-8">
           <div className="relative mb-4">
@@ -190,15 +263,14 @@ export function CreatePage() {
                   setCategory(topic.category);
                   setMode("create-new");
                   setStep(3);
-                  // Pre-fill with topic items
-                  const sampleItems: TierItem[] = [
+                  setTiers(DEFAULT_TIERS);
+                  setItems([
                     { id: "si1", name: "Item 1" },
                     { id: "si2", name: "Item 2" },
                     { id: "si3", name: "Item 3" },
                     { id: "si4", name: "Item 4" },
                     { id: "si5", name: "Item 5" },
-                  ];
-                  setItems(sampleItems);
+                  ]);
                 }}
                 className="w-full flex gap-3 bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-violet-200 shadow-sm transition-all text-left"
               >
@@ -218,10 +290,9 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* Create New - Step 1: Info */}
+      {/* ── Step 1: Info ── */}
       {mode === "create-new" && step === 1 && (
         <div className="px-4 pt-4 pb-8 space-y-4">
-          {/* Progress */}
           <div className="flex gap-1.5">
             {[1, 2, 3].map((s) => (
               <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-violet-500" : "bg-gray-200"}`} />
@@ -279,15 +350,13 @@ export function CreatePage() {
                   onClick={() => setIsPublic(true)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"}`}
                 >
-                  <Globe size={15} />
-                  Public
+                  <Globe size={15} /> Public
                 </button>
                 <button
                   onClick={() => setIsPublic(false)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${!isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"}`}
                 >
-                  <Lock size={15} />
-                  Private
+                  <Lock size={15} /> Private
                 </button>
               </div>
             </div>
@@ -303,7 +372,7 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* Create New - Step 2: Items */}
+      {/* ── Step 2: Items ── */}
       {mode === "create-new" && step === 2 && (
         <div className="px-4 pt-4 pb-8 space-y-4">
           <div className="flex gap-1.5">
@@ -385,7 +454,7 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* Create New - Step 3: Rank */}
+      {/* ── Step 3: Rank ── */}
       {mode === "create-new" && step === 3 && (
         <div className="px-4 pt-4 pb-8 space-y-4">
           <div className="flex gap-1.5">
@@ -395,66 +464,136 @@ export function CreatePage() {
           </div>
           <p className="text-xs text-gray-400 font-medium">Step 3 of 3 — Build Your Ranking</p>
 
-          {/* Tier Rows */}
+          {/* Tier rows — each is a drop target */}
           <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-            {TIER_KEYS.map((tier) => {
-              const colors = TIER_COLORS[tier];
+            {tiers.map((tier, index) => {
+              const bgColor = TIER_COLOR_PALETTE[index % TIER_COLOR_PALETTE.length];
+              const isOver = dragOverId === tier.id;
               return (
-                <div key={tier} className="border-b border-gray-100 last:border-0">
+                <div
+                  key={tier.id}
+                  className={`border-b border-gray-100 last:border-0 transition-colors ${isOver ? "bg-violet-50" : ""}`}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverId(tier.id); }}
+                  onDragLeave={(e) => {
+                    // only clear if leaving the row itself, not a child
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null);
+                  }}
+                  onDrop={() => handleDropOnTier(tier.id)}
+                >
                   <div className="flex items-stretch min-h-[56px]">
-                    <div className={`${colors.bg} w-12 flex items-center justify-center flex-shrink-0`}>
-                      <span className="font-black text-white text-base">{tier}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 p-2 flex-1">
-                      {tiers[tier].map((item) => (
+                    {/* Tier label — dynamic width, click to rename */}
+                    <div className={`${bgColor} min-w-[3.5rem] px-2 flex items-center justify-center flex-shrink-0`}>
+                      {editingTierId === tier.id ? (
+                        <input
+                          autoFocus
+                          value={tier.label}
+                          onChange={(e) => renameTier(tier.id, e.target.value)}
+                          onBlur={() => setEditingTierId(null)}
+                          onKeyDown={(e) => { if (e.key === "Enter") setEditingTierId(null); }}
+                          className="w-full bg-transparent text-white font-black text-sm text-center focus:outline-none border-b border-white/60 min-w-0"
+                        />
+                      ) : (
                         <button
+                          onClick={() => setEditingTierId(tier.id)}
+                          title="Click to rename"
+                          className="font-black text-white text-sm text-center w-full h-full flex items-center justify-center hover:bg-black/10 transition-colors leading-tight break-all py-2"
+                        >
+                          {tier.label || "?"}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Items inside the tier */}
+                    <div className="flex flex-wrap gap-1.5 p-2 flex-1 min-h-[56px]">
+                      {tier.items.map((item) => (
+                        <div
                           key={item.id}
-                          onClick={() => removeFromTier(item, tier)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 font-medium shadow-sm hover:border-red-300 hover:text-red-500 transition-all group"
+                          draggable
+                          onDragStart={() => handleDragStart(item, tier.id)}
+                          onDragEnd={handleDragEnd}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 font-medium shadow-sm cursor-grab active:cursor-grabbing active:opacity-50 select-none"
                         >
                           {item.emoji && <span>{item.emoji}</span>}
                           {item.name}
-                          <X size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
+                          <button
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); removeFromTier(item, tier.id); }}
+                            className="ml-0.5 text-gray-300 hover:text-red-400 transition-colors"
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
                       ))}
+                      {/* Drop hint when dragging over an empty tier */}
+                      {isOver && tier.items.length === 0 && (
+                        <span className="text-xs text-violet-400 italic self-center">Drop here</span>
+                      )}
                     </div>
+
+                    {/* Delete tier */}
+                    {tiers.length > 1 && (
+                      <button
+                        onClick={() => deleteTier(tier.id)}
+                        className="flex-shrink-0 w-9 flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                        title="Remove tier"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
             })}
+
+            {/* Add tier */}
+            <button
+              onClick={addTier}
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-violet-500 hover:text-violet-700 hover:bg-violet-50 transition-colors border-t border-gray-100"
+            >
+              <Plus size={14} />
+              Add Tier
+            </button>
           </div>
 
-          {/* Unranked items */}
+          {/* Unranked pool — also a drop target */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
               Unranked ({getUnrankedItems().length})
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div
+              className={`flex flex-wrap gap-2 min-h-[52px] rounded-xl p-2 border-2 border-dashed transition-colors ${
+                dragOverId === "unranked"
+                  ? "border-gray-400 bg-gray-100"
+                  : "border-gray-200 bg-white"
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setDragOverId("unranked"); }}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null);
+              }}
+              onDrop={handleDropOnUnranked}
+            >
               {getUnrankedItems().map((item) => (
-                <div key={item.id} className="relative group">
-                  <div className="inline-flex items-center gap-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm text-gray-700 shadow-sm">
-                    {item.emoji && <span>{item.emoji}</span>}
-                    {item.name}
-                  </div>
-                  {/* Tier Picker on hover */}
-                  <div className="absolute bottom-full left-0 mb-1 hidden group-hover:flex gap-0.5 bg-white border border-gray-200 rounded-xl p-1 shadow-lg z-10">
-                    {TIER_KEYS.map((tier) => (
-                      <button
-                        key={tier}
-                        onClick={() => moveItemToTier(item, null, tier)}
-                        className={`${TIER_COLORS[tier].bg} w-7 h-7 rounded-lg text-white text-xs font-black hover:opacity-90 transition-opacity`}
-                      >
-                        {tier}
-                      </button>
-                    ))}
-                  </div>
+                <div
+                  key={item.id}
+                  draggable
+                  onDragStart={() => handleDragStart(item, null)}
+                  onDragEnd={handleDragEnd}
+                  className="inline-flex items-center gap-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm text-gray-700 shadow-sm cursor-grab active:cursor-grabbing active:opacity-50 select-none"
+                >
+                  {item.emoji && <span>{item.emoji}</span>}
+                  {item.name}
                 </div>
               ))}
-              {getUnrankedItems().length === 0 && (
-                <p className="text-sm text-green-600 font-medium">✅ All items ranked!</p>
+              {getUnrankedItems().length === 0 && dragOverId !== "unranked" && (
+                <p className="text-sm text-green-600 font-medium self-center">✅ All items ranked!</p>
+              )}
+              {dragOverId === "unranked" && (
+                <p className="text-sm text-gray-400 italic self-center">Drop to unrank</p>
               )}
             </div>
-            <p className="text-xs text-gray-400 mt-2">Hover an item to assign it a tier</p>
+            <p className="text-xs text-gray-400 mt-2">
+              Drag items into tiers · Drag between tiers to re-rank · Click a tier label to rename it
+            </p>
           </div>
 
           <div className="flex gap-2">
