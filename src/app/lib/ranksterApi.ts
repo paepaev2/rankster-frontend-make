@@ -1,9 +1,11 @@
 import type {
   AuthSession,
+  ChatMessage,
   Category,
   CreateRankInput,
   LeaderboardEntry,
   Message,
+  MessageThreadDetail,
   ProfileResponse,
   RankPost,
   SearchOverviewResponse,
@@ -143,6 +145,17 @@ export async function createRankPost(input: CreateRankInput) {
 export async function fetchMessageThreads() {
   const response = await apiFetch<{ items: Message[] }>("/messages/threads");
   return response.items;
+}
+
+export async function fetchMessageThread(threadId: string) {
+  return apiFetch<MessageThreadDetail>(`/messages/threads/${encodeURIComponent(threadId)}`);
+}
+
+export async function sendMessage(threadId: string, text: string) {
+  return apiFetch<ChatMessage>(`/messages/threads/${encodeURIComponent(threadId)}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
 }
 
 export async function fetchLeaderboard() {

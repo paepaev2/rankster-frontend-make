@@ -59,6 +59,19 @@ export interface Message {
   unread: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  text: string;
+  mine: boolean;
+  timestamp: string;
+}
+
+export interface MessageThreadDetail {
+  id: string;
+  user: User;
+  messages: ChatMessage[];
+}
+
 export interface TrendingTopic {
   id: string;
   title: string;
