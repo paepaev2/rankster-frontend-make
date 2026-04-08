@@ -1,185 +1,127 @@
 'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Search, X, Flame, Users, TrendingUp } from "lucide-react";
-import { CATEGORIES, TRENDING_TOPICS, USERS } from "../data/mockData";
+import { useDeferredValue, useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { fetchSearchOverview, fetchTrendingTopics } from "../lib/ranksterApi";
+import type { Category, SearchOverviewResponse, TrendingTopic } from "../lib/feedUi";
 
 export function SearchPage() {
-  const router = useRouter();
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [results, setResults] = useState<SearchOverviewResponse | null>(null);
+  const [trending, setTrending] = useState<TrendingTopic[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const deferredQuery = useDeferredValue(query);
 
-  const filteredTopics = TRENDING_TOPICS.filter((t) => {
-    const matchesQuery = query === "" || t.title.toLowerCase().includes(query.toLowerCase());
-    const matchesCategory = activeCategory === null || t.category === activeCategory;
-    return matchesQuery && matchesCategory;
-  });
+  useEffect(() => {
+    void fetchTrendingTopics()
+      .then(setTrending)
+      .catch((searchError) => {
+        setError(searchError instanceof Error ? searchError.message : "Failed to load trending topics.");
+      });
+  }, []);
 
-  const filteredUsers = USERS.filter(
-    (u) =>
-      query !== "" &&
-      (u.displayName.toLowerCase().includes(query.toLowerCase()) ||
-        u.username.toLowerCase().includes(query.toLowerCase()))
-  );
+  useEffect(() => {
+    const normalizedQuery = deferredQuery.trim();
+    if (!normalizedQuery) {
+      setResults(null);
+      return;
+    }
 
-  const formatCount = (n: number) => {
-    if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-    return n.toString();
-  };
+    const handle = window.setTimeout(() => {
+      void fetchSearchOverview(normalizedQuery)
+        .then(setResults)
+        .catch((searchError) => {
+          setError(searchError instanceof Error ? searchError.message : "Search failed.");
+        });
+    }, 200);
+
+    return () => window.clearTimeout(handle);
+  }, [deferredQuery]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="px-4 pt-12 pb-4">
-          <h1 className="text-2xl font-black text-gray-900 mb-3">Discover</h1>
-          {/* Search Bar */}
-          <div className="relative">
-            <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+    <div className="min-h-screen bg-gray-50 px-4 pt-12 pb-24">
+      <div className="mx-auto max-w-lg space-y-5">
+        <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-600">Discover</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-gray-900">Search rankings</h1>
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+            <Search size={18} className="text-gray-400" />
             <input
-              type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search topics, people, categories..."
-              className="w-full bg-gray-100 rounded-2xl pl-10 pr-10 py-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:bg-white transition-all"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search topics, people, or categories"
+              className="w-full bg-transparent text-sm text-gray-700 outline-none"
             />
-            {query && (
-              <button
-                onClick={() => setQuery("")}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X size={16} />
-              </button>
-            )}
           </div>
+          {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
         </div>
-      </div>
 
-      <div className="px-4 pb-6">
-        {/* User Results */}
-        {filteredUsers.length > 0 && (
-          <div className="mt-4">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">People</h2>
-            <div className="space-y-2">
-              {filteredUsers.map((user) => (
-                <button
-                  key={user.id}
-                  onClick={() => router.push(`/profile/${user.username}`)}
-                  className="w-full flex items-center gap-3 bg-white rounded-2xl p-3 shadow-sm border border-gray-100 hover:border-violet-200 transition-all text-left"
-                >
-                  <img
-                    src={user.avatar}
-                    alt={user.displayName}
-                    className="w-12 h-12 rounded-xl object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-semibold text-gray-900 text-sm">{user.displayName}</span>
-                      {user.verified && <span className="text-violet-500 text-xs">✓</span>}
-                    </div>
-                    <span className="text-xs text-gray-400">@{user.username}</span>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-gray-500">{formatCount(user.followers)} followers</span>
-                      <span className="text-xs text-gray-300">·</span>
-                      <span className="text-xs text-gray-500">{user.totalRankings} rankings</span>
-                    </div>
+        {results ? (
+          <div className="space-y-5">
+            <SectionTitle title="People" />
+            <div className="space-y-3">
+              {results.users.map((user) => (
+                <Link key={user.id} href={`/profile/${user.username}`} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                  <Image src={user.avatar} alt={user.displayName} width={52} height={52} className="h-[52px] w-[52px] rounded-2xl object-cover" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900">{user.displayName}</p>
+                    <p className="text-sm text-gray-500">@{user.username}</p>
                   </div>
-                </button>
+                </Link>
+              ))}
+            </div>
+
+            <SectionTitle title="Topics" />
+            <div className="grid grid-cols-1 gap-3">
+              {results.topics.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
+              ))}
+            </div>
+
+            <SectionTitle title="Categories" />
+            <div className="flex flex-wrap gap-2">
+              {results.categories.map((category) => (
+                <CategoryChip key={category.id} category={category} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <SectionTitle title="Trending now" />
+            <div className="space-y-3">
+              {trending.map((topic) => (
+                <TopicCard key={topic.id} topic={topic} />
               ))}
             </div>
           </div>
         )}
-
-        {/* Categories */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">Categories</h2>
-            {activeCategory && (
-              <button
-                onClick={() => setActiveCategory(null)}
-                className="text-xs text-violet-500 font-medium"
-              >
-                Clear filter
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(activeCategory === cat.id ? null : cat.id)}
-                className={`flex items-center gap-2.5 p-3 rounded-2xl border-2 transition-all text-left ${
-                  activeCategory === cat.id
-                    ? "border-violet-400 bg-violet-50"
-                    : "border-transparent bg-white hover:border-gray-200 shadow-sm"
-                }`}
-              >
-                <span className="text-2xl">{cat.emoji}</span>
-                <span className="font-semibold text-sm text-gray-800">{cat.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Trending Topics */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Flame size={16} className="text-orange-500" />
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider">
-              {activeCategory ? "Filtered Topics" : "Trending Now"}
-            </h2>
-          </div>
-
-          {filteredTopics.length === 0 ? (
-            <div className="text-center py-12">
-              <span className="text-4xl">🔍</span>
-              <p className="text-gray-500 mt-2 text-sm">No topics found</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {filteredTopics.map((topic, index) => (
-                <button
-                  key={topic.id}
-                  onClick={() => router.push(`/topic/${topic.id}`)}
-                  className="w-full flex gap-3 bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all text-left"
-                >
-                  <div className="relative w-20 h-20 flex-shrink-0">
-                    <img
-                      src={topic.coverImage}
-                      alt={topic.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-1.5 left-1.5 w-5 h-5 bg-black/60 rounded-lg flex items-center justify-center">
-                      <span className="text-white text-[9px] font-black">#{index + 1}</span>
-                    </div>
-                  </div>
-                  <div className="flex-1 py-3 pr-3">
-                    <span className="text-xs text-violet-500 font-medium">
-                      {CATEGORIES.find((c) => c.id === topic.category)?.emoji}{" "}
-                      {CATEGORIES.find((c) => c.id === topic.category)?.name}
-                    </span>
-                    <h3 className="font-bold text-gray-900 text-sm mt-0.5 leading-tight">{topic.title}</h3>
-                    <div className="flex items-center gap-1 mt-1.5">
-                      <Users size={11} className="text-gray-400" />
-                      <span className="text-xs text-gray-400">{formatCount(topic.participantCount)} ranked this</span>
-                      <span className="ml-2 flex items-center gap-0.5 text-xs text-orange-500">
-                        <TrendingUp size={11} />
-                        Hot
-                      </span>
-                    </div>
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
-                      {topic.tags.map((tag) => (
-                        <span key={tag} className="text-[10px] text-gray-400">#{tag}</span>
-                      ))}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({ title }: { title: string }) {
+  return <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-500">{title}</h2>;
+}
+
+function TopicCard({ topic }: { topic: TrendingTopic }) {
+  return (
+    <Link href={`/topic/${topic.id}`} className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      <Image src={topic.coverImage} alt={topic.title} width={88} height={64} className="h-16 w-22 rounded-2xl object-cover" />
+      <div className="min-w-0">
+        <p className="font-semibold text-gray-900">{topic.title}</p>
+        <p className="mt-1 text-sm text-gray-500">{topic.participantCount.toLocaleString()} participants</p>
+      </div>
+    </Link>
+  );
+}
+
+function CategoryChip({ category }: { category: Category }) {
+  return (
+    <div className={`rounded-full px-3 py-1.5 text-sm font-medium ${category.color}`}>
+      {category.emoji} {category.name}
     </div>
   );
 }

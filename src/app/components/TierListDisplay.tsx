@@ -1,5 +1,5 @@
 import React from "react";
-import { TierData, TIER_COLORS } from "../data/mockData";
+import { TIER_COLORS, type TierData } from "../lib/feedUi";
 
 interface TierListDisplayProps {
   tiers: TierData;

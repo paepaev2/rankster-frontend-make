@@ -1,6 +1,7 @@
 import React, { useState } from "react";
+import Image from "next/image";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronDown, ChevronUp } from "lucide-react";
-import { RankPost } from "../data/mockData";
+import type { RankPost } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 
@@ -39,10 +40,12 @@ export function RankPostCard({ post, onProfileClick, onTopicClick }: RankPostCar
             onClick={() => onProfileClick?.(post.user.id)}
             className="relative"
           >
-            <img
+            <Image
               src={post.user.avatar}
               alt={post.user.displayName}
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-violet-100"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-violet-100"
             />
             {post.user.verified && (
               <span className="absolute -bottom-0.5 -right-0.5 bg-violet-500 rounded-full w-4 h-4 flex items-center justify-center">
@@ -79,10 +82,12 @@ export function RankPostCard({ post, onProfileClick, onTopicClick }: RankPostCar
         className="w-full text-left"
       >
         <div className="relative">
-          <img
+          <Image
             src={post.coverImage}
             alt={post.title}
-            className="w-full h-36 object-cover"
+            width={720}
+            height={288}
+            className="h-36 w-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -187,10 +192,12 @@ export function RankPostCard({ post, onProfileClick, onTopicClick }: RankPostCar
         <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
           {post.comments.map((comment) => (
             <div key={comment.id} className="flex gap-2.5">
-              <img
+              <Image
                 src={comment.user.avatar}
                 alt={comment.user.displayName}
-                className="w-7 h-7 rounded-full object-cover flex-shrink-0"
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-full object-cover flex-shrink-0"
               />
               <div className="bg-gray-50 rounded-xl px-3 py-2 flex-1">
                 <div className="flex items-center justify-between">
