@@ -2,23 +2,22 @@
 
 import React, { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Settings, Share2, UserPlus, UserCheck, Grid3X3, BarChart2, Heart } from "lucide-react";
-import { USERS, MOCK_POSTS, MY_RANKINGS } from "../data/mockData";
+import { ArrowLeft, Settings, Share2, UserPlus, UserCheck, BarChart2, Heart, Pin, PinOff } from "lucide-react";
+import { USERS, MOCK_POSTS, MY_RANKINGS, CATEGORIES } from "../data/mockData";
 import { TierListDisplay } from "../components/TierListDisplay";
-import { CATEGORIES } from "../data/mockData";
 
 const PROFILE_TABS = ["Rankings", "Liked", "Stats"];
 
 export function ProfilePage() {
   const router = useRouter();
   const params = useParams();
-  const username = params.username as string | undefined;
+  const username = params?.username as string | undefined;
   const [activeTab, setActiveTab] = useState("Rankings");
   const [following, setFollowing] = useState(false);
+  const [pinnedPostId, setPinnedPostId] = useState<string | null>(null);
 
-  // Determine which user to show
   const isMe = !username || username === "me";
-  const currentUser = USERS[4]; // logged-in user
+  const currentUser = USERS[4];
   const profileUser = isMe
     ? currentUser
     : USERS.find((u) => u.username === username || u.id === username) || USERS[0];
@@ -31,9 +30,21 @@ export function ProfilePage() {
     return n.toString();
   };
 
+  const togglePin = (postId: string) => {
+    setPinnedPostId((prev) => (prev === postId ? null : postId));
+  };
+
+  // Show pinned post first
+  const sortedPosts = pinnedPostId
+    ? [
+        ...userPosts.filter((p) => p.id === pinnedPostId),
+        ...userPosts.filter((p) => p.id !== pinnedPostId),
+      ]
+    : userPosts;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Controls */}
+      {/* Header */}
       <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
         <div className="px-4 pt-12 pb-3 flex items-center justify-between">
           <button onClick={() => router.back()} className="text-gray-600">
@@ -45,7 +56,10 @@ export function ProfilePage() {
               <Share2 size={19} />
             </button>
             {isMe && (
-              <button className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700">
+              <button
+                onClick={() => router.push("/profile/settings")}
+                className="w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-700"
+              >
                 <Settings size={19} />
               </button>
             )}
@@ -55,19 +69,14 @@ export function ProfilePage() {
 
       {/* Profile Info */}
       <div className="bg-white">
-        {/* Cover gradient */}
+        {/* Cover */}
         <div className="h-28 bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-600 relative overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
                 className="absolute rounded-full bg-white/30"
-                style={{
-                  width: `${40 + i * 20}px`,
-                  height: `${40 + i * 20}px`,
-                  top: `${Math.sin(i) * 30 + 20}%`,
-                  left: `${i * 18}%`,
-                }}
+                style={{ width: `${40 + i * 20}px`, height: `${40 + i * 20}px`, top: `${Math.sin(i) * 30 + 20}%`, left: `${i * 18}%` }}
               />
             ))}
           </div>
@@ -89,16 +98,17 @@ export function ProfilePage() {
             </div>
             <div className="flex gap-2 mt-12">
               {isMe ? (
-                <button className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-all">
+                <button
+                  onClick={() => router.push("/profile/edit")}
+                  className="px-4 py-2 bg-gray-100 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-all"
+                >
                   Edit Profile
                 </button>
               ) : (
                 <button
                   onClick={() => setFollowing(!following)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                    following
-                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      : "bg-violet-600 text-white hover:bg-violet-700"
+                    following ? "bg-gray-100 text-gray-700 hover:bg-gray-200" : "bg-violet-600 text-white hover:bg-violet-700"
                   }`}
                 >
                   {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
@@ -142,9 +152,7 @@ export function ProfilePage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`flex-1 py-3 text-sm font-semibold border-b-2 transition-all ${
-                activeTab === tab
-                  ? "text-violet-600 border-violet-600"
-                  : "text-gray-400 border-transparent"
+                activeTab === tab ? "text-violet-600 border-violet-600" : "text-gray-400 border-transparent"
               }`}
             >
               {tab}
@@ -158,7 +166,7 @@ export function ProfilePage() {
         {/* Rankings */}
         {activeTab === "Rankings" && (
           <div className="space-y-3">
-            {userPosts.length === 0 ? (
+            {sortedPosts.length === 0 ? (
               <div className="text-center py-16">
                 <span className="text-4xl">📋</span>
                 <p className="text-gray-400 mt-3 text-sm">No rankings yet</p>
@@ -172,31 +180,53 @@ export function ProfilePage() {
                 )}
               </div>
             ) : (
-              userPosts.map((post) => (
-                <div key={post.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-                  <div className="relative">
-                    <img src={post.coverImage} alt={post.title} className="w-full h-28 object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-3">
-                      <span className="text-[10px] text-white/70 bg-white/20 px-2 py-0.5 rounded-full">
-                        {CATEGORIES.find((c) => c.id === post.category)?.emoji}{" "}
-                        {CATEGORIES.find((c) => c.id === post.category)?.name}
-                      </span>
-                      <h3 className="text-white font-bold text-sm mt-1">{post.title}</h3>
+              sortedPosts.map((post) => {
+                const isPinned = pinnedPostId === post.id;
+                return (
+                  <div key={post.id} className={`bg-white rounded-2xl overflow-hidden border shadow-sm ${isPinned ? "border-violet-300 ring-1 ring-violet-200" : "border-gray-100"}`}>
+                    {isPinned && (
+                      <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-0">
+                        <Pin size={11} className="text-violet-500" />
+                        <span className="text-[11px] text-violet-500 font-semibold">Pinned ranking</span>
+                      </div>
+                    )}
+                    <div className="relative">
+                      <img src={post.coverImage} alt={post.title} className="w-full h-28 object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                      <div className="absolute bottom-0 left-0 p-3">
+                        <span className="text-[10px] text-white/70 bg-white/20 px-2 py-0.5 rounded-full">
+                          {CATEGORIES.find((c) => c.id === post.category)?.emoji}{" "}
+                          {CATEGORIES.find((c) => c.id === post.category)?.name}
+                        </span>
+                        <h3 className="text-white font-bold text-sm mt-1">{post.title}</h3>
+                      </div>
+                      {isMe && (
+                        <button
+                          onClick={() => togglePin(post.id)}
+                          className={`absolute top-2 right-2 w-8 h-8 rounded-xl flex items-center justify-center transition-all shadow-sm ${
+                            isPinned
+                              ? "bg-violet-500 text-white"
+                              : "bg-black/40 text-white hover:bg-black/60"
+                          }`}
+                          title={isPinned ? "Unpin" : "Pin to profile"}
+                        >
+                          {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                        </button>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <TierListDisplay tiers={post.tiers} compact />
+                      <div className="flex items-center gap-4 mt-2.5 text-xs text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Heart size={12} className="text-red-400" />
+                          {(post.likes / 1000).toFixed(1)}k likes
+                        </span>
+                        <span>{post.createdAt}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-3">
-                    <TierListDisplay tiers={post.tiers} compact />
-                    <div className="flex items-center gap-4 mt-2.5 text-xs text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Heart size={12} className="text-red-400" />
-                        {(post.likes / 1000).toFixed(1)}k likes
-                      </span>
-                      <span>{post.createdAt}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}

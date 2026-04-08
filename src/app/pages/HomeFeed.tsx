@@ -6,7 +6,7 @@ import { Bell, Trophy, Flame } from "lucide-react";
 import { MOCK_POSTS, USERS } from "../data/mockData";
 import { RankPostCard } from "../components/RankPostCard";
 
-const FILTER_TABS = ["Following", "For You", "Trending"];
+const FILTER_TABS = ["For You", "Following"];
 
 export function HomeFeed() {
   const router = useRouter();
@@ -65,31 +65,6 @@ export function HomeFeed() {
         </div>
       </div>
 
-      {/* Stories / Who to Rank With */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
-        <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          {/* Add Story */}
-          <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-violet-300 flex items-center justify-center bg-violet-50">
-              <span className="text-violet-500 text-xl font-light">+</span>
-            </div>
-            <span className="text-[10px] text-gray-500">Your List</span>
-          </div>
-          {USERS.slice(0, 4).map((user) => (
-            <button
-              key={user.id}
-              onClick={() => router.push(`/profile/${user.username}`)}
-              className="flex flex-col items-center gap-1 flex-shrink-0"
-            >
-              <div className="w-14 h-14 rounded-2xl ring-2 ring-violet-400 ring-offset-2 overflow-hidden">
-                <img src={user.avatar} alt={user.displayName} className="w-full h-full object-cover" />
-              </div>
-              <span className="text-[10px] text-gray-500 max-w-[56px] truncate">{user.username}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Feed */}
       <div className="px-4 py-4 space-y-4">
         {MOCK_POSTS.map((post) => (
@@ -101,7 +76,6 @@ export function HomeFeed() {
           />
         ))}
 
-        {/* Load more */}
         <div className="text-center py-6">
           <button className="px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all shadow-sm">
             Load more rankings

@@ -2,15 +2,17 @@
 
 import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Plus, Trash2, GripVertical, ChevronRight, Globe, Lock, Search } from "lucide-react";
+import { X, Plus, Trash2, GripVertical, ChevronRight, Globe, Lock, Search, Image, Type } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
 
 type Mode = "choose" | "create-new" | "rank-existing";
+type ItemFormat = "text" | "image";
 
 interface TierItem {
   id: string;
   name: string;
   emoji?: string;
+  imageUrl?: string;
 }
 
 interface Tier {
@@ -38,6 +40,178 @@ const DEFAULT_TIERS: Tier[] = [
   { id: "tier_D", label: "D", items: [] },
 ];
 
+// ── Item chip components ──────────────────────────────────────────────────────
+
+function TextChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRemove, removable = true }: {
+  item: TierItem;
+  draggable?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onRemove?: () => void;
+  removable?: boolean;
+}) {
+  return (
+    <div
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={`inline-flex items-center gap-1 px-2.5 py-1 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 font-medium shadow-sm select-none ${isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""}`}
+    >
+      {item.emoji && <span>{item.emoji}</span>}
+      {item.name}
+      {removable && onRemove && (
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="ml-0.5 text-gray-300 hover:text-red-400 transition-colors"
+        >
+          <X size={10} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ImageChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRemove, removable = true }: {
+  item: TierItem;
+  draggable?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onRemove?: () => void;
+  removable?: boolean;
+}) {
+  return (
+    <div
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className={`relative flex flex-col items-center w-16 select-none ${isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""}`}
+    >
+      <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+        {item.imageUrl ? (
+          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <Image size={20} />
+          </div>
+        )}
+      </div>
+      <span className="text-[10px] text-gray-600 font-medium text-center mt-0.5 leading-tight max-w-[56px] line-clamp-2">{item.name}</span>
+      {removable && onRemove && (
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+        >
+          <X size={8} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Small chip for inside tier rows ──────────────────────────────────────────
+
+function TierImageChip({ item, onDragStart, onDragEnd, onRemove }: {
+  item: TierItem;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
+  onRemove?: () => void;
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      className="relative flex flex-col items-center w-12 cursor-grab active:cursor-grabbing active:opacity-50 select-none"
+    >
+      <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+        {item.imageUrl ? (
+          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-300">
+            <Image size={14} />
+          </div>
+        )}
+      </div>
+      <span className="text-[9px] text-gray-600 font-medium text-center mt-0.5 leading-tight max-w-[44px] line-clamp-2">{item.name}</span>
+      {onRemove && (
+        <button
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-400 rounded-full flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+        >
+          <X size={7} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Rank add item row component ──────────────────────────────────────────────
+
+interface RankAddItemRowProps {
+  itemFormat: ItemFormat;
+  rankNewEmoji: string;
+  rankNewImageUrl: string;
+  rankNewName: string;
+  onEmojiChange: (value: string) => void;
+  onImageUrlChange: (value: string) => void;
+  onNameChange: (value: string) => void;
+  onAddItem: () => void;
+}
+
+function RankAddItemRow({
+  itemFormat,
+  rankNewEmoji,
+  rankNewImageUrl,
+  rankNewName,
+  onEmojiChange,
+  onImageUrlChange,
+  onNameChange,
+  onAddItem,
+}: RankAddItemRowProps) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 space-y-2">
+      <div className="flex gap-2">
+        {itemFormat === "text" ? (
+          <input
+            type="text"
+            value={rankNewEmoji}
+            onChange={(e) => onEmojiChange(e.target.value)}
+            placeholder="🎬"
+            className="w-12 bg-gray-50 rounded-lg text-center py-2 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+          />
+        ) : (
+          <input
+            type="text"
+            value={rankNewImageUrl}
+            onChange={(e) => onImageUrlChange(e.target.value)}
+            placeholder="Image URL"
+            className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-xs border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+          />
+        )}
+        <input
+          type="text"
+          value={rankNewName}
+          onChange={(e) => onNameChange(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onAddItem()}
+          placeholder="Item name"
+          className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+        />
+        <button
+          onClick={onAddItem}
+          className="w-9 h-9 bg-violet-500 rounded-lg flex items-center justify-center text-white hover:bg-violet-600 transition-colors flex-shrink-0"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export function CreatePage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("choose");
@@ -45,37 +219,66 @@ export function CreatePage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  const [itemFormat, setItemFormat] = useState<ItemFormat>("text");
+
+  // Item pool
   const [newItemName, setNewItemName] = useState("");
   const [newItemEmoji, setNewItemEmoji] = useState("");
+  const [newItemImageUrl, setNewItemImageUrl] = useState("");
   const [items, setItems] = useState<TierItem[]>([]);
+
+  // Tiers
   const [tiers, setTiers] = useState<Tier[]>(DEFAULT_TIERS);
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
-  const [step, setStep] = useState(1); // 1=info, 2=items, 3=rank
+
+  // Step 3 quick-add
+  const [showAddInRank, setShowAddInRank] = useState(false);
+  const [rankNewName, setRankNewName] = useState("");
+  const [rankNewEmoji, setRankNewEmoji] = useState("");
+  const [rankNewImageUrl, setRankNewImageUrl] = useState("");
+
+  const [step, setStep] = useState(1);
   const [searchTopic, setSearchTopic] = useState("");
 
   // Drag state
   const dragPayload = useRef<{ item: TierItem; fromTierId: string | null } | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null); // tier.id or "unranked"
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const filteredTopics = TRENDING_TOPICS.filter((t) =>
     t.title.toLowerCase().includes(searchTopic.toLowerCase())
   );
 
-  // ── Item pool ────────────────────────────────────────────────────────────────
+  // ── Item pool ───────────────────────────────────────────────────────────────
 
   const addItem = () => {
     if (!newItemName.trim()) return;
     setItems([...items, {
       id: `item_${Date.now()}`,
       name: newItemName.trim(),
-      emoji: newItemEmoji || undefined,
+      emoji: itemFormat === "text" ? (newItemEmoji || undefined) : undefined,
+      imageUrl: itemFormat === "image" ? (newItemImageUrl || undefined) : undefined,
     }]);
     setNewItemName("");
     setNewItemEmoji("");
+    setNewItemImageUrl("");
   };
 
   const removeItem = (id: string) => {
     setItems(items.filter((i) => i.id !== id));
+    setTiers((prev) => prev.map((t) => ({ ...t, items: t.items.filter((i) => i.id !== id) })));
+  };
+
+  const addItemInRank = () => {
+    if (!rankNewName.trim()) return;
+    setItems((prev) => [...prev, {
+      id: `item_${Date.now()}`,
+      name: rankNewName.trim(),
+      emoji: itemFormat === "text" ? (rankNewEmoji || undefined) : undefined,
+      imageUrl: itemFormat === "image" ? (rankNewImageUrl || undefined) : undefined,
+    }]);
+    setRankNewName("");
+    setRankNewEmoji("");
+    setRankNewImageUrl("");
   };
 
   const getUnrankedItems = () => {
@@ -83,7 +286,7 @@ export function CreatePage() {
     return items.filter((i) => !rankedIds.has(i.id));
   };
 
-  // ── Tier data ────────────────────────────────────────────────────────────────
+  // ── Tier data ───────────────────────────────────────────────────────────────
 
   const moveItemToTier = (item: TierItem, fromTierId: string | null, toTierId: string) => {
     setTiers((prev) =>
@@ -119,7 +322,7 @@ export function CreatePage() {
     );
   };
 
-  // ── Drag & drop ──────────────────────────────────────────────────────────────
+  // ── Drag & drop ─────────────────────────────────────────────────────────────
 
   const handleDragStart = (item: TierItem, fromTierId: string | null) => {
     dragPayload.current = { item, fromTierId };
@@ -132,10 +335,7 @@ export function CreatePage() {
 
   const handleDropOnTier = (toTierId: string) => {
     const payload = dragPayload.current;
-    if (!payload || payload.fromTierId === toTierId) {
-      setDragOverId(null);
-      return;
-    }
+    if (!payload || payload.fromTierId === toTierId) { setDragOverId(null); return; }
     moveItemToTier(payload.item, payload.fromTierId, toTierId);
     dragPayload.current = null;
     setDragOverId(null);
@@ -143,20 +343,23 @@ export function CreatePage() {
 
   const handleDropOnUnranked = () => {
     const payload = dragPayload.current;
-    if (!payload || payload.fromTierId === null) {
-      setDragOverId(null);
-      return;
-    }
+    if (!payload || payload.fromTierId === null) { setDragOverId(null); return; }
     removeFromTier(payload.item, payload.fromTierId);
     dragPayload.current = null;
     setDragOverId(null);
   };
 
-  // ── Misc ─────────────────────────────────────────────────────────────────────
+  // ── Reset ───────────────────────────────────────────────────────────────────
 
-  const handlePublish = () => {
-    router.push("/");
+  const handleReset = () => {
+    setMode("choose"); setStep(1);
+    setTiers(DEFAULT_TIERS); setItems([]);
+    setTitle(""); setCategory("");
+    setItemFormat("text");
+    setShowAddInRank(false);
   };
+
+  const handlePublish = () => router.push("/");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,14 +373,7 @@ export function CreatePage() {
             {mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
           </h1>
           {mode !== "choose" && (
-            <button
-              onClick={() => {
-                setMode("choose"); setStep(1);
-                setTiers(DEFAULT_TIERS); setItems([]);
-                setTitle(""); setCategory("");
-              }}
-              className="text-sm text-violet-500 font-medium"
-            >
+            <button onClick={handleReset} className="text-sm text-violet-500 font-medium">
               Reset
             </button>
           )}
@@ -343,6 +539,26 @@ export function CreatePage() {
               />
             </div>
 
+            {/* Item Format */}
+            <div>
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Item Format</label>
+              <p className="text-[11px] text-gray-400 mt-0.5 mb-2">Applies to all items in this list</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setItemFormat("text")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${itemFormat === "text" ? "border-violet-400 bg-violet-50 text-violet-700 font-semibold" : "border-gray-100 text-gray-500 hover:border-gray-200"}`}
+                >
+                  <Type size={15} /> Text
+                </button>
+                <button
+                  onClick={() => setItemFormat("image")}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${itemFormat === "image" ? "border-violet-400 bg-violet-50 text-violet-700 font-semibold" : "border-gray-100 text-gray-500 hover:border-gray-200"}`}
+                >
+                  <Image size={15} /> Image
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Visibility</label>
               <div className="flex gap-2 mt-2">
@@ -383,30 +599,63 @@ export function CreatePage() {
           <p className="text-xs text-gray-400 font-medium">Step 2 of 3 — Add Items</p>
 
           <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-            <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Add Items to Rank</label>
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                value={newItemEmoji}
-                onChange={(e) => setNewItemEmoji(e.target.value)}
-                placeholder="🎬"
-                className="w-12 bg-gray-50 rounded-xl text-center py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
-              />
-              <input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addItem()}
-                placeholder="Item name (press Enter)"
-                className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
-              />
-              <button
-                onClick={addItem}
-                className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center text-white hover:bg-violet-600 transition-colors"
-              >
-                <Plus size={18} />
-              </button>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Add Items to Rank</label>
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                {itemFormat === "text" ? "🔤 Text" : "🖼️ Image"} mode
+              </span>
             </div>
+
+            {itemFormat === "text" ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newItemEmoji}
+                  onChange={(e) => setNewItemEmoji(e.target.value)}
+                  placeholder="🎬"
+                  className="w-12 bg-gray-50 rounded-xl text-center py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                />
+                <input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addItem()}
+                  placeholder="Item name (press Enter)"
+                  className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                />
+                <button onClick={addItem} className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center text-white hover:bg-violet-600 transition-colors">
+                  <Plus size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Item name *"
+                  className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newItemImageUrl}
+                    onChange={(e) => setNewItemImageUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addItem()}
+                    placeholder="Image URL (optional)"
+                    className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  />
+                  {newItemImageUrl && (
+                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
+                      <img src={newItemImageUrl} alt="preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                  )}
+                  <button onClick={addItem} className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center text-white hover:bg-violet-600 transition-colors flex-shrink-0">
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="mt-4 space-y-2">
               {items.length === 0 ? (
@@ -414,20 +663,38 @@ export function CreatePage() {
                   <span className="text-3xl">📝</span>
                   <p className="text-sm mt-2">Add items to rank</p>
                 </div>
-              ) : (
+              ) : itemFormat === "text" ? (
                 items.map((item) => (
                   <div key={item.id} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
                     <GripVertical size={16} className="text-gray-300" />
                     {item.emoji && <span>{item.emoji}</span>}
                     <span className="text-sm text-gray-800 flex-1">{item.name}</span>
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="text-gray-300 hover:text-red-400 transition-colors"
-                    >
+                    <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-400 transition-colors">
                       <Trash2 size={15} />
                     </button>
                   </div>
                 ))
+              ) : (
+                <div className="flex flex-wrap gap-3 pt-1">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex flex-col items-center gap-1 relative">
+                      <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300"><Image size={22} /></div>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-600 text-center max-w-[64px] leading-tight line-clamp-2">{item.name}</span>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full flex items-center justify-center text-white hover:bg-red-500"
+                      >
+                        <X size={8} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
@@ -437,16 +704,13 @@ export function CreatePage() {
           </div>
 
           <div className="flex gap-2">
-            <button
-              onClick={() => setStep(1)}
-              className="flex-1 bg-white border border-gray-200 text-gray-600 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition-all"
-            >
+            <button onClick={() => setStep(1)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition-all">
               ← Back
             </button>
             <button
               onClick={() => items.length >= 2 && setStep(3)}
               disabled={items.length < 2}
-              className="flex-2 flex-1 bg-violet-600 text-white py-3.5 rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-700 transition-all shadow-lg"
+              className="flex-1 bg-violet-600 text-white py-3.5 rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-700 transition-all shadow-lg"
             >
               Next: Rank →
             </button>
@@ -464,7 +728,7 @@ export function CreatePage() {
           </div>
           <p className="text-xs text-gray-400 font-medium">Step 3 of 3 — Build Your Ranking</p>
 
-          {/* Tier rows — each is a drop target */}
+          {/* Tier rows */}
           <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
             {tiers.map((tier, index) => {
               const bgColor = TIER_COLOR_PALETTE[index % TIER_COLOR_PALETTE.length];
@@ -474,14 +738,11 @@ export function CreatePage() {
                   key={tier.id}
                   className={`border-b border-gray-100 last:border-0 transition-colors ${isOver ? "bg-violet-50" : ""}`}
                   onDragOver={(e) => { e.preventDefault(); setDragOverId(tier.id); }}
-                  onDragLeave={(e) => {
-                    // only clear if leaving the row itself, not a child
-                    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null);
-                  }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null); }}
                   onDrop={() => handleDropOnTier(tier.id)}
                 >
                   <div className="flex items-stretch min-h-[56px]">
-                    {/* Tier label — dynamic width, click to rename */}
+                    {/* Tier label */}
                     <div className={`${bgColor} min-w-[3.5rem] px-2 flex items-center justify-center flex-shrink-0`}>
                       {editingTierId === tier.id ? (
                         <input
@@ -503,28 +764,28 @@ export function CreatePage() {
                       )}
                     </div>
 
-                    {/* Items inside the tier */}
-                    <div className="flex flex-wrap gap-1.5 p-2 flex-1 min-h-[56px]">
-                      {tier.items.map((item) => (
-                        <div
-                          key={item.id}
-                          draggable
-                          onDragStart={() => handleDragStart(item, tier.id)}
-                          onDragEnd={handleDragEnd}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 font-medium shadow-sm cursor-grab active:cursor-grabbing active:opacity-50 select-none"
-                        >
-                          {item.emoji && <span>{item.emoji}</span>}
-                          {item.name}
-                          <button
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onClick={(e) => { e.stopPropagation(); removeFromTier(item, tier.id); }}
-                            className="ml-0.5 text-gray-300 hover:text-red-400 transition-colors"
-                          >
-                            <X size={10} />
-                          </button>
-                        </div>
-                      ))}
-                      {/* Drop hint when dragging over an empty tier */}
+                    {/* Items */}
+                    <div className={`flex flex-wrap gap-1.5 p-2 flex-1 min-h-[56px] ${itemFormat === "image" ? "items-start" : "items-center"}`}>
+                      {tier.items.map((item) =>
+                        itemFormat === "image" ? (
+                          <TierImageChip
+                            key={item.id}
+                            item={item}
+                            onDragStart={() => handleDragStart(item, tier.id)}
+                            onDragEnd={handleDragEnd}
+                            onRemove={() => removeFromTier(item, tier.id)}
+                          />
+                        ) : (
+                          <TextChip
+                            key={item.id}
+                            item={item}
+                            draggable
+                            onDragStart={() => handleDragStart(item, tier.id)}
+                            onDragEnd={handleDragEnd}
+                            onRemove={() => removeFromTier(item, tier.id)}
+                          />
+                        )
+                      )}
                       {isOver && tier.items.length === 0 && (
                         <span className="text-xs text-violet-400 italic self-center">Drop here</span>
                       )}
@@ -545,45 +806,73 @@ export function CreatePage() {
               );
             })}
 
-            {/* Add tier */}
             <button
               onClick={addTier}
               className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-violet-500 hover:text-violet-700 hover:bg-violet-50 transition-colors border-t border-gray-100"
             >
-              <Plus size={14} />
-              Add Tier
+              <Plus size={14} /> Add Tier
             </button>
           </div>
 
-          {/* Unranked pool — also a drop target */}
+          {/* Unranked pool */}
           <div>
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-              Unranked ({getUnrankedItems().length})
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Unranked ({getUnrankedItems().length})
+              </p>
+              <button
+                onClick={() => setShowAddInRank(!showAddInRank)}
+                className="flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700 font-medium transition-colors"
+              >
+                <Plus size={13} />
+                Add item
+              </button>
+            </div>
+
+            {showAddInRank && (
+              <div className="mb-2">
+                <RankAddItemRow
+                  itemFormat={itemFormat}
+                  rankNewEmoji={rankNewEmoji}
+                  rankNewImageUrl={rankNewImageUrl}
+                  rankNewName={rankNewName}
+                  onEmojiChange={setRankNewEmoji}
+                  onImageUrlChange={setRankNewImageUrl}
+                  onNameChange={setRankNewName}
+                  onAddItem={addItemInRank}
+                />
+              </div>
+            )}
+
             <div
               className={`flex flex-wrap gap-2 min-h-[52px] rounded-xl p-2 border-2 border-dashed transition-colors ${
-                dragOverId === "unranked"
-                  ? "border-gray-400 bg-gray-100"
-                  : "border-gray-200 bg-white"
+                dragOverId === "unranked" ? "border-gray-400 bg-gray-100" : "border-gray-200 bg-white"
               }`}
               onDragOver={(e) => { e.preventDefault(); setDragOverId("unranked"); }}
-              onDragLeave={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null);
-              }}
+              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null); }}
               onDrop={handleDropOnUnranked}
             >
-              {getUnrankedItems().map((item) => (
-                <div
-                  key={item.id}
-                  draggable
-                  onDragStart={() => handleDragStart(item, null)}
-                  onDragEnd={handleDragEnd}
-                  className="inline-flex items-center gap-1 px-3 py-2 bg-white rounded-xl border border-gray-200 text-sm text-gray-700 shadow-sm cursor-grab active:cursor-grabbing active:opacity-50 select-none"
-                >
-                  {item.emoji && <span>{item.emoji}</span>}
-                  {item.name}
-                </div>
-              ))}
+              {getUnrankedItems().map((item) =>
+                itemFormat === "image" ? (
+                  <ImageChip
+                    key={item.id}
+                    item={item}
+                    draggable
+                    onDragStart={() => handleDragStart(item, null)}
+                    onDragEnd={handleDragEnd}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                ) : (
+                  <TextChip
+                    key={item.id}
+                    item={item}
+                    draggable
+                    onDragStart={() => handleDragStart(item, null)}
+                    onDragEnd={handleDragEnd}
+                    onRemove={() => removeItem(item.id)}
+                  />
+                )
+              )}
               {getUnrankedItems().length === 0 && dragOverId !== "unranked" && (
                 <p className="text-sm text-green-600 font-medium self-center">✅ All items ranked!</p>
               )}
@@ -592,7 +881,7 @@ export function CreatePage() {
               )}
             </div>
             <p className="text-xs text-gray-400 mt-2">
-              Drag items into tiers · Drag between tiers to re-rank · Click a tier label to rename it
+              Drag items into tiers · Drag between tiers to re-rank · Click a tier label to rename · × to remove an item
             </p>
           </div>
 
@@ -605,7 +894,7 @@ export function CreatePage() {
             </button>
             <button
               onClick={handlePublish}
-              className="flex-2 flex-1 bg-violet-600 text-white py-3.5 rounded-2xl font-bold hover:bg-violet-700 transition-all shadow-lg"
+              className="flex-1 bg-violet-600 text-white py-3.5 rounded-2xl font-bold hover:bg-violet-700 transition-all shadow-lg"
             >
               🚀 Publish
             </button>
