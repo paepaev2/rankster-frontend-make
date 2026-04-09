@@ -1,27 +1,65 @@
 'use client';
 
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Trophy, TrendingUp, TrendingDown, Minus, Crown } from "lucide-react";
-import { LEADERBOARD_USERS, USERS } from "../data/mockData";
-import { CATEGORIES } from "../data/mockData";
+import { ArrowLeft, Crown, Minus, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { fetchCategories, fetchLeaderboardFiltered } from "../lib/ranksterApi";
+import { useMockSession } from "../lib/useMockSession";
+import type { Category, LeaderboardEntry } from "../lib/feedUi";
 
 const TIME_FILTERS = ["This Week", "This Month", "All Time"];
 
 export function LeaderboardPage() {
   const router = useRouter();
+  const { session } = useMockSession();
   const [timeFilter, setTimeFilter] = useState("This Week");
   const [categoryFilter, setCategoryFilter] = useState("All");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const currentUser = USERS[4];
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLeaderboard() {
+      try {
+        const [resolvedEntries, resolvedCategories] = await Promise.all([
+          fetchLeaderboardFiltered(normalizeTimeframe(timeFilter), normalizeCategory(categoryFilter)),
+          fetchCategories(),
+        ]);
+        if (!cancelled) {
+          setEntries(resolvedEntries);
+          setCategories(resolvedCategories.slice(0, 6));
+        }
+      } catch (leaderboardError) {
+        if (!cancelled) {
+          setError(leaderboardError instanceof Error ? leaderboardError.message : "Failed to load leaderboard.");
+        }
+      }
+    }
+
+    void loadLeaderboard();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [categoryFilter, timeFilter]);
+
+  const podium = entries.slice(0, 3);
+  const currentUserEntry = useMemo(() => {
+    if (!session) {
+      return null;
+    }
+    return entries.find((entry) => entry.user.id === session.user.id) ?? null;
+  }, [entries, session]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
+      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
         <div className="px-4 pt-12 pb-4">
-          <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => router.back()} className="text-gray-500">
+          <div className="mb-4 flex items-center gap-3">
+            <button onClick={() => router.back()} className="text-gray-500" aria-label="Go back">
               <ArrowLeft size={22} />
             </button>
             <div>
@@ -30,44 +68,40 @@ export function LeaderboardPage() {
             </div>
           </div>
 
-          {/* Time Filter */}
-          <div className="flex bg-gray-100 rounded-xl p-1 mb-3">
-            {TIME_FILTERS.map((f) => (
+          <div className="mb-3 flex rounded-xl bg-gray-100 p-1">
+            {TIME_FILTERS.map((filter) => (
               <button
-                key={f}
-                onClick={() => setTimeFilter(f)}
-                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  timeFilter === f ? "bg-white text-violet-700 shadow-sm" : "text-gray-500"
+                key={filter}
+                onClick={() => setTimeFilter(filter)}
+                className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                  timeFilter === filter ? "bg-white text-violet-700 shadow-sm" : "text-gray-500"
                 }`}
               >
-                {f}
+                {filter}
               </button>
             ))}
           </div>
 
-          {/* Category Filter */}
-          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setCategoryFilter("All")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0 transition-all ${
-                categoryFilter === "All"
-                  ? "bg-violet-600 text-white"
-                  : "bg-white text-gray-500 border border-gray-200"
+              className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                categoryFilter === "All" ? "bg-violet-600 text-white" : "border border-gray-200 bg-white text-gray-500"
               }`}
             >
               All
             </button>
-            {CATEGORIES.slice(0, 6).map((cat) => (
+            {categories.map((category) => (
               <button
-                key={cat.id}
-                onClick={() => setCategoryFilter(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0 transition-all ${
-                  categoryFilter === cat.id
+                key={category.id}
+                onClick={() => setCategoryFilter(category.id)}
+                className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                  categoryFilter === category.id
                     ? "bg-violet-600 text-white"
-                    : "bg-white text-gray-500 border border-gray-200"
+                    : "border border-gray-200 bg-white text-gray-500"
                 }`}
               >
-                {cat.emoji} {cat.name}
+                {category.emoji} {category.name}
               </button>
             ))}
           </div>
@@ -75,137 +109,198 @@ export function LeaderboardPage() {
       </div>
 
       <div className="px-4 py-4">
-        {/* Top 3 Podium */}
-        <div className="flex items-end justify-center gap-3 mb-6 px-4 py-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
-          {/* 2nd Place */}
-          <div className="flex flex-col items-center gap-2 flex-1">
-            <div className="relative">
-              <img
-                src={LEADERBOARD_USERS[1].user.avatar}
-                alt={LEADERBOARD_USERS[1].user.displayName}
-                className="w-14 h-14 rounded-2xl object-cover ring-2 ring-gray-300"
-              />
-              <span className="absolute -bottom-2 -right-2 w-6 h-6 bg-gray-400 rounded-full text-white text-xs font-black flex items-center justify-center">2</span>
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-bold text-gray-800">{LEADERBOARD_USERS[1].user.username}</p>
-              <p className="text-[10px] text-gray-400">{(LEADERBOARD_USERS[1].score / 1000).toFixed(1)}k pts</p>
-            </div>
-            <div className="w-full bg-gray-300 rounded-t-lg h-16 flex items-end justify-center pb-2">
-              <span className="text-gray-600 font-black text-sm">2</span>
-            </div>
-          </div>
+        {error ? (
+          <div className="rounded-2xl border border-red-100 bg-white p-4 text-sm text-red-500 shadow-sm">{error}</div>
+        ) : (
+          <>
+            {podium.length === 3 ? <Podium entries={podium} /> : null}
 
-          {/* 1st Place */}
-          <div className="flex flex-col items-center gap-2 flex-1">
-            <Crown size={22} className="text-yellow-500" />
-            <div className="relative">
-              <img
-                src={LEADERBOARD_USERS[0].user.avatar}
-                alt={LEADERBOARD_USERS[0].user.displayName}
-                className="w-18 h-18 rounded-2xl object-cover ring-4 ring-yellow-400"
-                style={{ width: "72px", height: "72px" }}
-              />
-              <span className="absolute -bottom-2 -right-2 w-7 h-7 bg-yellow-400 rounded-full text-white text-sm font-black flex items-center justify-center">1</span>
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-bold text-gray-900">{LEADERBOARD_USERS[0].user.username}</p>
-              <p className="text-[10px] text-yellow-600 font-semibold">{(LEADERBOARD_USERS[0].score / 1000).toFixed(1)}k pts</p>
-            </div>
-            <div className="w-full bg-yellow-400 rounded-t-lg h-24 flex items-end justify-center pb-2">
-              <span className="text-white font-black">👑</span>
-            </div>
-          </div>
-
-          {/* 3rd Place */}
-          <div className="flex flex-col items-center gap-2 flex-1">
-            <div className="relative">
-              <img
-                src={LEADERBOARD_USERS[2].user.avatar}
-                alt={LEADERBOARD_USERS[2].user.displayName}
-                className="w-14 h-14 rounded-2xl object-cover ring-2 ring-orange-400"
-              />
-              <span className="absolute -bottom-2 -right-2 w-6 h-6 bg-orange-400 rounded-full text-white text-xs font-black flex items-center justify-center">3</span>
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-bold text-gray-800">{LEADERBOARD_USERS[2].user.username}</p>
-              <p className="text-[10px] text-gray-400">{(LEADERBOARD_USERS[2].score / 1000).toFixed(1)}k pts</p>
-            </div>
-            <div className="w-full bg-orange-400 rounded-t-lg h-10 flex items-end justify-center pb-2">
-              <span className="text-white font-black text-sm">3</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Full Rankings */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
-            <h3 className="font-bold text-gray-900 text-sm">Full Rankings</h3>
-          </div>
-          {LEADERBOARD_USERS.map((entry, idx) => {
-            const isMe = entry.user.id === currentUser.id;
-            const change = entry.change;
-            const ChangeIcon = change.startsWith("+") ? TrendingUp : change === "0" ? Minus : TrendingDown;
-            const changeColor = change.startsWith("+") ? "text-green-500" : change === "0" ? "text-gray-400" : "text-red-500";
-
-            return (
-              <div
-                key={entry.user.id}
-                className={`flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 ${isMe ? "bg-violet-50" : ""}`}
-              >
-                {/* Rank */}
-                <div className="w-8 flex items-center justify-center">
-                  {idx < 3 ? (
-                    <Trophy size={18} className={idx === 0 ? "text-yellow-500" : idx === 1 ? "text-gray-400" : "text-orange-400"} />
-                  ) : (
-                    <span className="text-sm font-bold text-gray-400">#{entry.rank}</span>
-                  )}
-                </div>
-
-                {/* Avatar */}
-                <img
-                  src={entry.user.avatar}
-                  alt={entry.user.displayName}
-                  className={`w-10 h-10 rounded-xl object-cover ${isMe ? "ring-2 ring-violet-400" : ""}`}
+            <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              <div className="border-b border-gray-100 px-4 py-3">
+                <h3 className="text-sm font-bold text-gray-900">Full Rankings</h3>
+              </div>
+              {entries.map((entry, index) => (
+                <LeaderboardRow
+                  key={entry.user.id}
+                  entry={entry}
+                  index={index}
+                  isCurrentUser={entry.user.id === session?.user.id}
                 />
+              ))}
+            </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-sm font-bold ${isMe ? "text-violet-700" : "text-gray-900"} truncate`}>
-                      {entry.user.displayName}
-                    </span>
-                    {isMe && <span className="text-[10px] bg-violet-200 text-violet-700 px-1.5 py-0.5 rounded-full font-bold">You</span>}
-                    {entry.user.verified && <span className="text-violet-500 text-xs">✓</span>}
-                  </div>
-                  <p className="text-xs text-gray-400">@{entry.user.username}</p>
-                </div>
-
-                {/* Score & Change */}
-                <div className="text-right">
-                  <p className="text-sm font-black text-gray-900">{(entry.score / 1000).toFixed(1)}k</p>
-                  <div className={`flex items-center justify-end gap-0.5 ${changeColor}`}>
-                    <ChangeIcon size={11} />
-                    <span className="text-[10px] font-bold">{change}</span>
+            {currentUserEntry ? (
+              <div className="mt-4 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-violet-600">#{currentUserEntry.rank}</span>
+                  <Image
+                    src={currentUserEntry.user.avatar}
+                    alt={currentUserEntry.user.displayName}
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 rounded-xl object-cover ring-2 ring-violet-400"
+                  />
+                  <div>
+                    <p className="text-sm font-bold text-violet-800">
+                      You — {currentUserEntry.user.displayName}
+                    </p>
+                    <p className="text-xs text-violet-500">
+                      {formatPoints(currentUserEntry.score)} pts · Keep ranking to climb!
+                    </p>
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
-        {/* My Ranking */}
-        <div className="mt-4 bg-violet-50 rounded-2xl border-2 border-violet-200 p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-violet-600">#5</span>
-            <img src={currentUser.avatar} alt="me" className="w-10 h-10 rounded-xl object-cover ring-2 ring-violet-400" />
-            <div>
-              <p className="text-sm font-bold text-violet-800">You — {currentUser.displayName}</p>
-              <p className="text-xs text-violet-500">28,901 pts · Keep ranking to climb! 🚀</p>
-            </div>
-          </div>
+function Podium({ entries }: { entries: LeaderboardEntry[] }) {
+  const [first, second, third] = entries;
+
+  return (
+    <div className="mb-6 flex items-end justify-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-6 shadow-sm">
+      <PodiumSpot entry={second} place={2} heightClass="h-16" ringClass="ring-gray-300" badgeClass="bg-gray-400" />
+      <div className="flex flex-1 flex-col items-center gap-2">
+        <Crown size={22} className="text-yellow-500" />
+        <div className="relative">
+          <Image
+            src={first.user.avatar}
+            alt={first.user.displayName}
+            width={72}
+            height={72}
+            className="h-[72px] w-[72px] rounded-2xl object-cover ring-4 ring-yellow-400"
+          />
+          <span className="absolute right-[-4px] bottom-[-8px] flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-sm font-black text-white">
+            1
+          </span>
+        </div>
+        <div className="text-center">
+          <p className="text-xs font-bold text-gray-900">{first.user.username}</p>
+          <p className="text-[10px] font-semibold text-yellow-600">{formatPoints(first.score)} pts</p>
+        </div>
+        <div className="flex h-24 w-full items-end justify-center rounded-t-lg bg-yellow-400 pb-2">
+          <span className="font-black text-white">👑</span>
+        </div>
+      </div>
+      <PodiumSpot entry={third} place={3} heightClass="h-10" ringClass="ring-orange-400" badgeClass="bg-orange-400" />
+    </div>
+  );
+}
+
+function PodiumSpot({
+  entry,
+  place,
+  heightClass,
+  ringClass,
+  badgeClass,
+}: {
+  entry: LeaderboardEntry;
+  place: number;
+  heightClass: string;
+  ringClass: string;
+  badgeClass: string;
+}) {
+  return (
+    <div className="flex flex-1 flex-col items-center gap-2">
+      <div className="relative">
+        <Image
+          src={entry.user.avatar}
+          alt={entry.user.displayName}
+          width={56}
+          height={56}
+          className={`h-14 w-14 rounded-2xl object-cover ring-2 ${ringClass}`}
+        />
+        <span
+          className={`absolute right-[-4px] bottom-[-8px] flex h-6 w-6 items-center justify-center rounded-full text-xs font-black text-white ${badgeClass}`}
+        >
+          {place}
+        </span>
+      </div>
+      <div className="text-center">
+        <p className="text-xs font-bold text-gray-800">{entry.user.username}</p>
+        <p className="text-[10px] text-gray-400">{formatPoints(entry.score)} pts</p>
+      </div>
+      <div className={`flex w-full items-end justify-center rounded-t-lg pb-2 text-sm font-black text-white ${heightClass} ${badgeClass}`}>
+        {place}
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardRow({
+  entry,
+  index,
+  isCurrentUser,
+}: {
+  entry: LeaderboardEntry;
+  index: number;
+  isCurrentUser: boolean;
+}) {
+  const ChangeIcon = entry.change.startsWith("+")
+    ? TrendingUp
+    : entry.change === "0"
+      ? Minus
+      : TrendingDown;
+  const changeColor = entry.change.startsWith("+")
+    ? "text-green-500"
+    : entry.change === "0"
+      ? "text-gray-400"
+      : "text-red-500";
+
+  return (
+    <div className={`flex items-center gap-3 border-b border-gray-50 px-4 py-3 last:border-0 ${isCurrentUser ? "bg-violet-50" : ""}`}>
+      <div className="flex w-8 items-center justify-center">
+        {index < 3 ? (
+          <Trophy size={18} className={index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-orange-400"} />
+        ) : (
+          <span className="text-sm font-bold text-gray-400">#{entry.rank}</span>
+        )}
+      </div>
+
+      <Image
+        src={entry.user.avatar}
+        alt={entry.user.displayName}
+        width={40}
+        height={40}
+        className={`h-10 w-10 rounded-xl object-cover ${isCurrentUser ? "ring-2 ring-violet-400" : ""}`}
+      />
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className={`truncate text-sm font-bold ${isCurrentUser ? "text-violet-700" : "text-gray-900"}`}>
+            {entry.user.displayName}
+          </span>
+          {isCurrentUser ? (
+            <span className="rounded-full bg-violet-200 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">You</span>
+          ) : null}
+          {entry.user.verified ? <span className="text-xs text-violet-500">✓</span> : null}
+        </div>
+        <p className="text-xs text-gray-400">@{entry.user.username}</p>
+      </div>
+
+      <div className="text-right">
+        <p className="text-sm font-black text-gray-900">{formatPoints(entry.score)}</p>
+        <div className={`flex items-center justify-end gap-0.5 ${changeColor}`}>
+          <ChangeIcon size={11} />
+          <span className="text-[10px] font-bold">{entry.change}</span>
         </div>
       </div>
     </div>
   );
+}
+
+function formatPoints(score: number) {
+  return (score / 1000).toFixed(1) + "k";
+}
+
+function normalizeTimeframe(value: string) {
+  return value.toLowerCase().replace(/\s+/g, "-");
+}
+
+function normalizeCategory(value: string) {
+  return value === "All" ? "all" : value.toLowerCase();
 }

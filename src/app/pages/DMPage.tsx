@@ -1,125 +1,221 @@
-import React, { useState } from "react";
-import { Search, Edit, ArrowLeft, Send, Image, Smile } from "lucide-react";
-import { MOCK_MESSAGES, USERS } from "../data/mockData";
+'use client';
 
-interface ChatMessage {
-  id: string;
-  text: string;
-  mine: boolean;
-  timestamp: string;
-}
-
-const CHAT_HISTORY: ChatMessage[] = [
-  { id: "ch1", text: "Your NBA tier list is so wrong lmaoo 😭", mine: false, timestamp: "2:34 PM" },
-  { id: "ch2", text: "Curry in C is disrespectful??", mine: false, timestamp: "2:35 PM" },
-  { id: "ch3", text: "He's past his prime, I stand by it 😅", mine: true, timestamp: "2:37 PM" },
-  { id: "ch4", text: "Absolute crime. Anyway check my new anime tier list!", mine: false, timestamp: "2:40 PM" },
-  { id: "ch5", text: "omg Frieren S tier?? finally someone with taste", mine: true, timestamp: "2:41 PM" },
-];
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { ArrowLeft, Edit, Image as ImageIcon, Search, Send, Smile } from "lucide-react";
+import { fetchMessageThread, fetchMessageThreads, sendMessage } from "../lib/ranksterApi";
+import { useMockSession } from "../lib/useMockSession";
+import type { Message, MessageThreadDetail } from "../lib/feedUi";
 
 export function DMPage() {
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
+  const [threads, setThreads] = useState<Message[]>([]);
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeThread, setActiveThread] = useState<MessageThreadDetail | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(CHAT_HISTORY);
+  const [isThreadLoading, setIsThreadLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeChatUser = MOCK_MESSAGES.find((m) => m.id === activeChat)?.user;
+  useEffect(() => {
+    if (isAuthLoading || authError) {
+      return;
+    }
 
-  const sendMessage = () => {
-    if (!newMessage.trim()) return;
-    setMessages([
-      ...messages,
-      {
-        id: `msg_${Date.now()}`,
-        text: newMessage.trim(),
-        mine: true,
-        timestamp: "Now",
-      },
-    ]);
-    setNewMessage("");
+    let cancelled = false;
+    void fetchMessageThreads()
+      .then((items) => {
+        if (!cancelled) {
+          setThreads(items);
+        }
+      })
+      .catch((messageError) => {
+        if (!cancelled) {
+          setError(messageError instanceof Error ? messageError.message : "Failed to load messages.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthLoading, authError]);
+
+  useEffect(() => {
+    if (!activeThreadId) {
+      setActiveThread(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsThreadLoading(true);
+
+    void fetchMessageThread(activeThreadId)
+      .then((thread) => {
+        if (!cancelled) {
+          setActiveThread(thread);
+        }
+      })
+      .catch((threadError) => {
+        if (!cancelled) {
+          setError(threadError instanceof Error ? threadError.message : "Failed to load conversation.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsThreadLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeThreadId]);
+
+  const filteredThreads = threads.filter((thread) => {
+    const normalized = searchQuery.trim().toLowerCase();
+    if (!normalized) {
+      return true;
+    }
+    return (
+      thread.user.displayName.toLowerCase().includes(normalized) ||
+      thread.user.username.toLowerCase().includes(normalized)
+    );
+  });
+
+  const openThread = (thread: Message) => {
+    setError(null);
+    setActiveThreadId(thread.id);
   };
 
-  const filteredMessages = MOCK_MESSAGES.filter(
-    (m) =>
-      m.user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.user.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSendMessage = async () => {
+    if (!activeThreadId || !newMessage.trim()) {
+      return;
+    }
 
-  if (activeChat) {
+    try {
+      const created = await sendMessage(activeThreadId, newMessage.trim());
+      setActiveThread((current) => {
+        if (!current || current.id !== activeThreadId) {
+          return current;
+        }
+        return {
+          ...current,
+          messages: [...current.messages, created],
+        };
+      });
+      setThreads((currentThreads) => {
+        const currentThread = currentThreads.find((thread) => thread.id === activeThreadId);
+        if (!currentThread) {
+          return currentThreads;
+        }
+        const updated: Message = {
+          ...currentThread,
+          lastMessage: created.text,
+          timestamp: created.timestamp,
+          unread: 0,
+        };
+        return [updated, ...currentThreads.filter((thread) => thread.id !== activeThreadId)];
+      });
+      setNewMessage("");
+    } catch (sendError) {
+      setError(sendError instanceof Error ? sendError.message : "Failed to send message.");
+    }
+  };
+
+  if (isAuthLoading || !session) {
+    return <div className="px-4 pt-16 text-sm text-gray-500">Loading messages...</div>;
+  }
+
+  if (activeThreadId) {
+    const activeChatUser = activeThread?.user ?? threads.find((thread) => thread.id === activeThreadId)?.user;
+
     return (
-      <div className="flex flex-col h-screen bg-white">
-        {/* Chat Header */}
-        <div className="flex items-center gap-3 px-4 pt-12 pb-4 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-          <button onClick={() => setActiveChat(null)} className="text-gray-500 hover:text-gray-700">
+      <div className="flex h-screen flex-col bg-white">
+        <div className="flex items-center gap-3 border-b border-gray-100 bg-white/95 px-4 pt-12 pb-4 backdrop-blur-md">
+          <button onClick={() => setActiveThreadId(null)} className="text-gray-500 transition-colors hover:text-gray-700" aria-label="Back to messages">
             <ArrowLeft size={22} />
           </button>
-          {activeChatUser && (
+          {activeChatUser ? (
             <>
-              <img
+              <Image
                 src={activeChatUser.avatar}
                 alt={activeChatUser.displayName}
-                className="w-10 h-10 rounded-full object-cover"
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover"
               />
               <div>
-                <p className="font-bold text-gray-900 text-sm">{activeChatUser.displayName}</p>
-                <p className="text-xs text-green-500 font-medium">Online</p>
+                <p className="text-sm font-bold text-gray-900">{activeChatUser.displayName}</p>
+                <p className="text-xs font-medium text-green-500">Active now</p>
               </div>
             </>
+          ) : null}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 pb-28">
+          {isThreadLoading ? (
+            <p className="text-sm text-gray-500">Loading conversation...</p>
+          ) : (
+            <div className="space-y-3">
+              {activeThread?.messages.map((message) => (
+                <div key={message.id} className={`flex gap-2 ${message.mine ? "justify-end" : "justify-start"}`}>
+                  {!message.mine && activeChatUser ? (
+                    <Image
+                      src={activeChatUser.avatar}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="h-7 w-7 self-end rounded-full object-cover"
+                    />
+                  ) : null}
+                  <div className="max-w-[75%]">
+                    <div
+                      className={`rounded-2xl px-4 py-2.5 text-sm ${
+                        message.mine
+                          ? "rounded-br-sm bg-violet-600 text-white"
+                          : "rounded-bl-sm bg-gray-100 text-gray-800"
+                      }`}
+                    >
+                      {message.text}
+                    </div>
+                    <p className={`mt-1 text-[10px] text-gray-400 ${message.mine ? "text-right" : "text-left"}`}>
+                      {message.timestamp}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 pb-28">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.mine ? "justify-end" : "justify-start"} gap-2`}>
-              {!msg.mine && activeChatUser && (
-                <img
-                  src={activeChatUser.avatar}
-                  alt=""
-                  className="w-7 h-7 rounded-full object-cover self-end flex-shrink-0"
-                />
-              )}
-              <div className={`max-w-[75%]`}>
-                <div
-                  className={`px-4 py-2.5 rounded-2xl text-sm ${
-                    msg.mine
-                      ? "bg-violet-600 text-white rounded-br-sm"
-                      : "bg-gray-100 text-gray-800 rounded-bl-sm"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-                <p className={`text-[10px] text-gray-400 mt-1 ${msg.mine ? "text-right" : "text-left"}`}>
-                  {msg.timestamp}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Input */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 pb-6 max-w-lg mx-auto">
+        <div className="fixed right-0 bottom-0 left-0 mx-auto max-w-lg border-t border-gray-100 bg-white px-4 py-3 pb-6">
+          {error ? <p className="mb-2 text-sm text-red-500">{error}</p> : null}
           <div className="flex items-center gap-2">
-            <button className="text-gray-400 hover:text-violet-500 transition-colors">
-              <Image size={20} />
+            <button className="text-gray-400 transition-colors hover:text-violet-500" aria-label="Attach image">
+              <ImageIcon size={20} />
             </button>
-            <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-2xl px-4 py-2.5">
+            <div className="flex flex-1 items-center gap-2 rounded-2xl bg-gray-100 px-4 py-2.5">
               <input
                 type="text"
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                onChange={(event) => setNewMessage(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    void handleSendMessage();
+                  }
+                }}
                 placeholder="Message..."
                 className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
               />
-              <button className="text-gray-400 hover:text-yellow-500 transition-colors">
+              <button className="text-gray-400 transition-colors hover:text-yellow-500" aria-label="Emoji picker">
                 <Smile size={18} />
               </button>
             </div>
             <button
-              onClick={sendMessage}
+              onClick={() => void handleSendMessage()}
               disabled={!newMessage.trim()}
-              className="w-10 h-10 bg-violet-600 rounded-2xl flex items-center justify-center text-white disabled:opacity-40 hover:bg-violet-700 transition-all"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white transition-all hover:bg-violet-700 disabled:opacity-40"
+              aria-label="Send message"
             >
               <Send size={16} />
             </button>
@@ -131,83 +227,89 @@ export function DMPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
+      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
         <div className="px-4 pt-12 pb-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex items-center justify-between">
             <h1 className="text-2xl font-black text-gray-900">Messages</h1>
-            <button className="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center text-violet-500 hover:bg-violet-100 transition-colors">
+            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-500 transition-colors hover:bg-violet-100" aria-label="New message">
               <Edit size={18} />
             </button>
           </div>
           <div className="relative">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search messages..."
-              className="w-full bg-gray-100 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:bg-white transition-all"
+              className="w-full rounded-2xl bg-gray-100 py-2.5 pr-4 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
             />
           </div>
+          {authError || error ? <p className="mt-3 text-sm text-red-500">{authError || error}</p> : null}
         </div>
       </div>
 
-      {/* Suggested Users */}
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
-        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">Quick Chat</p>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar">
-          {USERS.slice(0, 4).map((user) => (
+      <div className="border-b border-gray-100 bg-white px-4 py-3">
+        <p className="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Quick Chat</p>
+        <div className="no-scrollbar flex gap-3 overflow-x-auto">
+          {threads.slice(0, 4).map((thread) => (
             <button
-              key={user.id}
-              onClick={() => setActiveChat("msg1")}
-              className="flex flex-col items-center gap-1 flex-shrink-0"
+              key={thread.id}
+              onClick={() => openThread(thread)}
+              className="flex flex-shrink-0 flex-col items-center gap-1"
             >
               <div className="relative">
-                <img src={user.avatar} alt={user.displayName} className="w-12 h-12 rounded-full object-cover" />
-                <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
+                <Image
+                  src={thread.user.avatar}
+                  alt={thread.user.displayName}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-full object-cover"
+                />
+                <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
               </div>
-              <span className="text-[10px] text-gray-500 max-w-[48px] truncate">{user.username}</span>
+              <span className="max-w-[48px] truncate text-[10px] text-gray-500">{thread.user.username}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Message List */}
-      <div className="px-4 py-3 space-y-1">
-        {filteredMessages.length === 0 ? (
-          <div className="text-center py-16">
+      <div className="space-y-1 px-4 py-3">
+        {filteredThreads.length === 0 ? (
+          <div className="py-16 text-center">
             <span className="text-4xl">💬</span>
-            <p className="text-gray-500 mt-3 text-sm">No conversations yet</p>
+            <p className="mt-3 text-sm text-gray-500">No conversations yet</p>
           </div>
         ) : (
-          filteredMessages.map((msg) => (
+          filteredThreads.map((thread) => (
             <button
-              key={msg.id}
-              onClick={() => setActiveChat(msg.id)}
-              className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-white transition-all text-left"
+              key={thread.id}
+              onClick={() => openThread(thread)}
+              className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all hover:bg-white"
             >
               <div className="relative flex-shrink-0">
-                <img
-                  src={msg.user.avatar}
-                  alt={msg.user.displayName}
-                  className="w-12 h-12 rounded-full object-cover"
+                <Image
+                  src={thread.user.avatar}
+                  alt={thread.user.displayName}
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 rounded-full object-cover"
                 />
-                {msg.unread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-violet-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center border-2 border-gray-50">
-                    {msg.unread}
+                {thread.unread > 0 ? (
+                  <span className="absolute top-[-4px] right-[-4px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-50 bg-violet-500 text-[9px] font-bold text-white">
+                    {thread.unread}
                   </span>
-                )}
+                ) : null}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm ${msg.unread > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-700"}`}>
-                    {msg.user.displayName}
+                  <span className={`text-sm ${thread.unread > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-700"}`}>
+                    {thread.user.displayName}
                   </span>
-                  <span className="text-[10px] text-gray-400">{msg.timestamp}</span>
+                  <span className="text-[10px] text-gray-400">{thread.timestamp}</span>
                 </div>
-                <p className={`text-xs truncate mt-0.5 ${msg.unread > 0 ? "text-gray-700 font-medium" : "text-gray-400"}`}>
-                  {msg.lastMessage}
+                <p className={`mt-0.5 truncate text-xs ${thread.unread > 0 ? "font-medium text-gray-700" : "text-gray-400"}`}>
+                  {thread.lastMessage}
                 </p>
               </div>
             </button>
@@ -217,3 +319,4 @@ export function DMPage() {
     </div>
   );
 }
+

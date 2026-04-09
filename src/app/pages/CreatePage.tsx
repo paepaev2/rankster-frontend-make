@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Plus, Trash2, GripVertical, ChevronRight, Globe, Lock, Search, Image, Type } from "lucide-react";
+import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
 
 type Mode = "choose" | "create-new" | "rank-existing";
@@ -40,9 +40,14 @@ const DEFAULT_TIERS: Tier[] = [
   { id: "tier_D", label: "D", items: [] },
 ];
 
-// ── Item chip components ──────────────────────────────────────────────────────
-
-function TextChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRemove, removable = true }: {
+function TextChip({
+  item,
+  draggable: isDraggable,
+  onDragStart,
+  onDragEnd,
+  onRemove,
+  removable = true,
+}: {
   item: TierItem;
   draggable?: boolean;
   onDragStart?: () => void;
@@ -55,15 +60,20 @@ function TextChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRemo
       draggable={isDraggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`inline-flex items-center gap-1 px-2.5 py-1 bg-white rounded-lg border border-gray-200 text-xs text-gray-700 font-medium shadow-sm select-none ${isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""}`}
+      className={`inline-flex select-none items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm ${
+        isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""
+      }`}
     >
       {item.emoji && <span>{item.emoji}</span>}
       {item.name}
       {removable && onRemove && (
         <button
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="ml-0.5 text-gray-300 hover:text-red-400 transition-colors"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          className="ml-0.5 text-gray-300 transition-colors hover:text-red-400"
         >
           <X size={10} />
         </button>
@@ -72,7 +82,14 @@ function TextChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRemo
   );
 }
 
-function ImageChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRemove, removable = true }: {
+function ImageChip({
+  item,
+  draggable: isDraggable,
+  onDragStart,
+  onDragEnd,
+  onRemove,
+  removable = true,
+}: {
   item: TierItem;
   draggable?: boolean;
   onDragStart?: () => void;
@@ -85,23 +102,30 @@ function ImageChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRem
       draggable={isDraggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className={`relative flex flex-col items-center w-16 select-none ${isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""}`}
+      className={`relative flex w-16 select-none flex-col items-center ${
+        isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""
+      }`}
     >
-      <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+      <div className="h-14 w-14 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-sm">
         {item.imageUrl ? (
-          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+          <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300">
+          <div className="flex h-full w-full items-center justify-center text-gray-300">
             <Image size={20} />
           </div>
         )}
       </div>
-      <span className="text-[10px] text-gray-600 font-medium text-center mt-0.5 leading-tight max-w-[56px] line-clamp-2">{item.name}</span>
+      <span className="mt-0.5 max-w-[56px] text-center text-[10px] font-medium leading-tight text-gray-600 line-clamp-2">
+        {item.name}
+      </span>
       {removable && onRemove && (
         <button
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-400 text-white transition-colors hover:bg-red-500"
         >
           <X size={8} />
         </button>
@@ -110,9 +134,12 @@ function ImageChip({ item, draggable: isDraggable, onDragStart, onDragEnd, onRem
   );
 }
 
-// ── Small chip for inside tier rows ──────────────────────────────────────────
-
-function TierImageChip({ item, onDragStart, onDragEnd, onRemove }: {
+function TierImageChip({
+  item,
+  onDragStart,
+  onDragEnd,
+  onRemove,
+}: {
   item: TierItem;
   onDragStart?: () => void;
   onDragEnd?: () => void;
@@ -123,23 +150,28 @@ function TierImageChip({ item, onDragStart, onDragEnd, onRemove }: {
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="relative flex flex-col items-center w-12 cursor-grab active:cursor-grabbing active:opacity-50 select-none"
+      className="relative flex w-12 cursor-grab select-none flex-col items-center active:cursor-grabbing active:opacity-50"
     >
-      <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+      <div className="h-10 w-10 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-sm">
         {item.imageUrl ? (
-          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+          <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-300">
+          <div className="flex h-full w-full items-center justify-center text-gray-300">
             <Image size={14} />
           </div>
         )}
       </div>
-      <span className="text-[9px] text-gray-600 font-medium text-center mt-0.5 leading-tight max-w-[44px] line-clamp-2">{item.name}</span>
+      <span className="mt-0.5 max-w-[44px] text-center text-[9px] font-medium leading-tight text-gray-600 line-clamp-2">
+        {item.name}
+      </span>
       {onRemove && (
         <button
-          onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-400 rounded-full flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
+          className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-400 text-white transition-colors hover:bg-red-500"
         >
           <X size={7} />
         </button>
@@ -147,8 +179,6 @@ function TierImageChip({ item, onDragStart, onDragEnd, onRemove }: {
     </div>
   );
 }
-
-// ── Rank add item row component ──────────────────────────────────────────────
 
 interface RankAddItemRowProps {
   itemFormat: ItemFormat;
@@ -172,36 +202,36 @@ function RankAddItemRow({
   onAddItem,
 }: RankAddItemRowProps) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 space-y-2">
+    <div className="space-y-2 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
       <div className="flex gap-2">
         {itemFormat === "text" ? (
           <input
             type="text"
             value={rankNewEmoji}
-            onChange={(e) => onEmojiChange(e.target.value)}
+            onChange={(event) => onEmojiChange(event.target.value)}
             placeholder="🎬"
-            className="w-12 bg-gray-50 rounded-lg text-center py-2 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="w-12 rounded-lg border border-gray-100 bg-gray-50 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
           />
         ) : (
           <input
             type="text"
             value={rankNewImageUrl}
-            onChange={(e) => onImageUrlChange(e.target.value)}
+            onChange={(event) => onImageUrlChange(event.target.value)}
             placeholder="Image URL"
-            className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-xs border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
           />
         )}
         <input
           type="text"
           value={rankNewName}
-          onChange={(e) => onNameChange(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && onAddItem()}
+          onChange={(event) => onNameChange(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && onAddItem()}
           placeholder="Item name"
-          className="flex-1 bg-gray-50 rounded-lg px-3 py-2 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+          className="flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
         />
         <button
           onClick={onAddItem}
-          className="w-9 h-9 bg-violet-500 rounded-lg flex items-center justify-center text-white hover:bg-violet-600 transition-colors flex-shrink-0"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white transition-colors hover:bg-violet-600"
         >
           <Plus size={16} />
         </button>
@@ -209,8 +239,6 @@ function RankAddItemRow({
     </div>
   );
 }
-
-// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function CreatePage() {
   const router = useRouter();
@@ -220,89 +248,92 @@ export function CreatePage() {
   const [category, setCategory] = useState("");
   const [isPublic, setIsPublic] = useState(true);
   const [itemFormat, setItemFormat] = useState<ItemFormat>("text");
-
-  // Item pool
   const [newItemName, setNewItemName] = useState("");
   const [newItemEmoji, setNewItemEmoji] = useState("");
   const [newItemImageUrl, setNewItemImageUrl] = useState("");
   const [items, setItems] = useState<TierItem[]>([]);
-
-  // Tiers
   const [tiers, setTiers] = useState<Tier[]>(DEFAULT_TIERS);
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
-
-  // Step 3 quick-add
   const [showAddInRank, setShowAddInRank] = useState(false);
   const [rankNewName, setRankNewName] = useState("");
   const [rankNewEmoji, setRankNewEmoji] = useState("");
   const [rankNewImageUrl, setRankNewImageUrl] = useState("");
-
   const [step, setStep] = useState(1);
   const [searchTopic, setSearchTopic] = useState("");
-
-  // Drag state
   const dragPayload = useRef<{ item: TierItem; fromTierId: string | null } | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  const filteredTopics = TRENDING_TOPICS.filter((t) =>
-    t.title.toLowerCase().includes(searchTopic.toLowerCase())
+  const filteredTopics = TRENDING_TOPICS.filter((topic) =>
+    topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
   );
 
-  // ── Item pool ───────────────────────────────────────────────────────────────
-
   const addItem = () => {
-    if (!newItemName.trim()) return;
-    setItems([...items, {
-      id: `item_${Date.now()}`,
-      name: newItemName.trim(),
-      emoji: itemFormat === "text" ? (newItemEmoji || undefined) : undefined,
-      imageUrl: itemFormat === "image" ? (newItemImageUrl || undefined) : undefined,
-    }]);
+    if (!newItemName.trim()) {
+      return;
+    }
+    setItems([
+      ...items,
+      {
+        id: `item_${Date.now()}`,
+        name: newItemName.trim(),
+        emoji: itemFormat === "text" ? (newItemEmoji || undefined) : undefined,
+        imageUrl: itemFormat === "image" ? (newItemImageUrl || undefined) : undefined,
+      },
+    ]);
     setNewItemName("");
     setNewItemEmoji("");
     setNewItemImageUrl("");
   };
 
   const removeItem = (id: string) => {
-    setItems(items.filter((i) => i.id !== id));
-    setTiers((prev) => prev.map((t) => ({ ...t, items: t.items.filter((i) => i.id !== id) })));
+    setItems(items.filter((item) => item.id !== id));
+    setTiers((prev) =>
+      prev.map((tier) => ({ ...tier, items: tier.items.filter((item) => item.id !== id) })),
+    );
   };
 
   const addItemInRank = () => {
-    if (!rankNewName.trim()) return;
-    setItems((prev) => [...prev, {
-      id: `item_${Date.now()}`,
-      name: rankNewName.trim(),
-      emoji: itemFormat === "text" ? (rankNewEmoji || undefined) : undefined,
-      imageUrl: itemFormat === "image" ? (rankNewImageUrl || undefined) : undefined,
-    }]);
+    if (!rankNewName.trim()) {
+      return;
+    }
+    setItems((prev) => [
+      ...prev,
+      {
+        id: `item_${Date.now()}`,
+        name: rankNewName.trim(),
+        emoji: itemFormat === "text" ? (rankNewEmoji || undefined) : undefined,
+        imageUrl: itemFormat === "image" ? (rankNewImageUrl || undefined) : undefined,
+      },
+    ]);
     setRankNewName("");
     setRankNewEmoji("");
     setRankNewImageUrl("");
   };
 
   const getUnrankedItems = () => {
-    const rankedIds = new Set(tiers.flatMap((t) => t.items).map((i) => i.id));
-    return items.filter((i) => !rankedIds.has(i.id));
+    const rankedIds = new Set(tiers.flatMap((tier) => tier.items).map((item) => item.id));
+    return items.filter((item) => !rankedIds.has(item.id));
   };
-
-  // ── Tier data ───────────────────────────────────────────────────────────────
 
   const moveItemToTier = (item: TierItem, fromTierId: string | null, toTierId: string) => {
     setTiers((prev) =>
       prev.map((tier) => {
-        if (tier.id === fromTierId) return { ...tier, items: tier.items.filter((i) => i.id !== item.id) };
-        if (tier.id === toTierId) return { ...tier, items: [...tier.items, item] };
+        if (tier.id === fromTierId) {
+          return { ...tier, items: tier.items.filter((entry) => entry.id !== item.id) };
+        }
+        if (tier.id === toTierId) {
+          return { ...tier, items: [...tier.items, item] };
+        }
         return tier;
-      })
+      }),
     );
   };
 
   const removeFromTier = (item: TierItem, tierId: string) => {
     setTiers((prev) =>
       prev.map((tier) =>
-        tier.id === tierId ? { ...tier, items: tier.items.filter((i) => i.id !== item.id) } : tier
-      )
+        tier.id === tierId ? { ...tier, items: tier.items.filter((entry) => entry.id !== item.id) } : tier,
+      ),
     );
   };
 
@@ -313,16 +344,12 @@ export function CreatePage() {
   };
 
   const deleteTier = (tierId: string) => {
-    setTiers((prev) => prev.filter((t) => t.id !== tierId));
+    setTiers((prev) => prev.filter((tier) => tier.id !== tierId));
   };
 
   const renameTier = (tierId: string, newLabel: string) => {
-    setTiers((prev) =>
-      prev.map((t) => (t.id === tierId ? { ...t, label: newLabel } : t))
-    );
+    setTiers((prev) => prev.map((tier) => (tier.id === tierId ? { ...tier, label: newLabel } : tier)));
   };
-
-  // ── Drag & drop ─────────────────────────────────────────────────────────────
 
   const handleDragStart = (item: TierItem, fromTierId: string | null) => {
     dragPayload.current = { item, fromTierId };
@@ -335,7 +362,10 @@ export function CreatePage() {
 
   const handleDropOnTier = (toTierId: string) => {
     const payload = dragPayload.current;
-    if (!payload || payload.fromTierId === toTierId) { setDragOverId(null); return; }
+    if (!payload || payload.fromTierId === toTierId) {
+      setDragOverId(null);
+      return;
+    }
     moveItemToTier(payload.item, payload.fromTierId, toTierId);
     dragPayload.current = null;
     setDragOverId(null);
@@ -343,18 +373,22 @@ export function CreatePage() {
 
   const handleDropOnUnranked = () => {
     const payload = dragPayload.current;
-    if (!payload || payload.fromTierId === null) { setDragOverId(null); return; }
+    if (!payload || payload.fromTierId === null) {
+      setDragOverId(null);
+      return;
+    }
     removeFromTier(payload.item, payload.fromTierId);
     dragPayload.current = null;
     setDragOverId(null);
   };
 
-  // ── Reset ───────────────────────────────────────────────────────────────────
-
   const handleReset = () => {
-    setMode("choose"); setStep(1);
-    setTiers(DEFAULT_TIERS); setItems([]);
-    setTitle(""); setCategory("");
+    setMode("choose");
+    setStep(1);
+    setTiers(DEFAULT_TIERS);
+    setItems([]);
+    setTitle("");
+    setCategory("");
     setItemFormat("text");
     setShowAddInRank(false);
   };
@@ -363,72 +397,71 @@ export function CreatePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
-        <div className="px-4 pt-12 pb-4 flex items-center justify-between">
+      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white">
+        <div className="flex items-center justify-between px-4 pt-12 pb-4">
           <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
             <X size={22} />
           </button>
           <h1 className="text-base font-bold text-gray-900">
             {mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
           </h1>
-          {mode !== "choose" && (
-            <button onClick={handleReset} className="text-sm text-violet-500 font-medium">
+          {mode !== "choose" ? (
+            <button onClick={handleReset} className="text-sm font-medium text-violet-500">
               Reset
             </button>
+          ) : (
+            <div className="w-8" />
           )}
-          {mode === "choose" && <div className="w-8" />}
         </div>
       </div>
 
-      {/* ── Choose Mode ── */}
       {mode === "choose" && (
-        <div className="px-4 pt-6 pb-8 space-y-4">
-          <p className="text-gray-500 text-sm text-center">What would you like to do?</p>
+        <div className="space-y-4 px-4 pt-6 pb-8">
+          <p className="text-center text-sm text-gray-500">What would you like to do?</p>
 
           <button
             onClick={() => setMode("create-new")}
-            className="w-full bg-white rounded-2xl p-5 border-2 border-violet-200 hover:border-violet-400 text-left shadow-sm transition-all group"
+            className="group w-full rounded-2xl border-2 border-violet-200 bg-white p-5 text-left shadow-sm transition-all hover:border-violet-400"
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl mb-2">🏆</div>
+                <div className="mb-2 text-2xl">🏆</div>
                 <h3 className="font-bold text-gray-900">Create New Tier List</h3>
-                <p className="text-sm text-gray-500 mt-1">Add your own topic, items, and share with the community</p>
+                <p className="mt-1 text-sm text-gray-500">Add your own topic, items, and share with the community</p>
               </div>
-              <ChevronRight size={20} className="text-violet-400 group-hover:text-violet-600 transition-colors" />
+              <ChevronRight size={20} className="text-violet-400 transition-colors group-hover:text-violet-600" />
             </div>
           </button>
 
           <button
             onClick={() => setMode("rank-existing")}
-            className="w-full bg-white rounded-2xl p-5 border-2 border-orange-200 hover:border-orange-400 text-left shadow-sm transition-all group"
+            className="group w-full rounded-2xl border-2 border-orange-200 bg-white p-5 text-left shadow-sm transition-all hover:border-orange-400"
           >
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-2xl mb-2">🔥</div>
+                <div className="mb-2 text-2xl">🔥</div>
                 <h3 className="font-bold text-gray-900">Rank an Existing Topic</h3>
-                <p className="text-sm text-gray-500 mt-1">Share your take on trending topics and compare with others</p>
+                <p className="mt-1 text-sm text-gray-500">Share your take on trending topics and compare with others</p>
               </div>
-              <ChevronRight size={20} className="text-orange-400 group-hover:text-orange-600 transition-colors" />
+              <ChevronRight size={20} className="text-orange-400 transition-colors group-hover:text-orange-600" />
             </div>
           </button>
 
           <div className="mt-6">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Hot Right Now 🔥</h2>
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Hot Right Now 🔥</h2>
             <div className="space-y-2">
               {TRENDING_TOPICS.slice(0, 3).map((topic) => (
                 <button
                   key={topic.id}
                   onClick={() => setMode("rank-existing")}
-                  className="w-full flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100 hover:border-violet-200 transition-all shadow-sm text-left"
+                  className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-violet-200"
                 >
-                  <img src={topic.coverImage} alt={topic.title} className="w-10 h-10 rounded-lg object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-gray-900 truncate">{topic.title}</p>
+                  <img src={topic.coverImage} alt={topic.title} className="h-10 w-10 rounded-lg object-cover" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900">{topic.title}</p>
                     <p className="text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k ranked this</p>
                   </div>
-                  <ChevronRight size={16} className="text-gray-400 flex-shrink-0" />
+                  <ChevronRight size={16} className="flex-shrink-0 text-gray-400" />
                 </button>
               ))}
             </div>
@@ -436,17 +469,16 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* ── Rank Existing ── */}
       {mode === "rank-existing" && (
         <div className="px-4 pt-4 pb-8">
           <div className="relative mb-4">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchTopic}
-              onChange={(e) => setSearchTopic(e.target.value)}
+              onChange={(event) => setSearchTopic(event.target.value)}
               placeholder="Search existing topics..."
-              className="w-full bg-white border border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
             />
           </div>
 
@@ -468,17 +500,15 @@ export function CreatePage() {
                     { id: "si5", name: "Item 5" },
                   ]);
                 }}
-                className="w-full flex gap-3 bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-violet-200 shadow-sm transition-all text-left"
+                className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-violet-200"
               >
-                <img src={topic.coverImage} alt={topic.title} className="w-20 h-20 object-cover flex-shrink-0" />
-                <div className="py-3 pr-3 flex-1">
-                  <span className="text-xs text-violet-500 font-medium">
-                    {CATEGORIES.find((c) => c.id === topic.category)?.emoji}
+                <img src={topic.coverImage} alt={topic.title} className="h-20 w-20 flex-shrink-0 object-cover" />
+                <div className="flex-1 py-3 pr-3">
+                  <span className="text-xs font-medium text-violet-500">
+                    {CATEGORIES.find((categoryItem) => categoryItem.id === topic.category)?.emoji}
                   </span>
-                  <h3 className="font-bold text-sm text-gray-900 mt-0.5">{topic.title}</h3>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {(topic.participantCount / 1000).toFixed(1)}k participants
-                  </p>
+                  <h3 className="mt-0.5 text-sm font-bold text-gray-900">{topic.title}</h3>
+                  <p className="mt-1 text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k participants</p>
                 </div>
               </button>
             ))}
@@ -486,73 +516,79 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* ── Step 1: Info ── */}
       {mode === "create-new" && step === 1 && (
-        <div className="px-4 pt-4 pb-8 space-y-4">
+        <div className="space-y-4 px-4 pt-4 pb-8">
           <div className="flex gap-1.5">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-violet-500" : "bg-gray-200"}`} />
+            {[1, 2, 3].map((segment) => (
+              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-violet-500" : "bg-gray-200"}`} />
             ))}
           </div>
-          <p className="text-xs text-gray-400 font-medium">Step 1 of 3 — Topic Info</p>
+          <p className="text-xs font-medium text-gray-400">Step 1 of 3 — Topic Info</p>
 
-          <div className="bg-white rounded-2xl p-4 space-y-4 border border-gray-100 shadow-sm">
+          <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
             <div>
-              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Title *</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Title *</label>
               <input
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="e.g. Best Movies of 2024"
-                className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:bg-white transition-all"
+                className="mt-2 w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Category *</label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                {CATEGORIES.map((cat) => (
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Category *</label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {CATEGORIES.map((categoryItem) => (
                   <button
-                    key={cat.id}
-                    onClick={() => setCategory(cat.id)}
-                    className={`flex items-center gap-2 p-2.5 rounded-xl text-sm transition-all border-2 ${
-                      category === cat.id
+                    key={categoryItem.id}
+                    onClick={() => setCategory(categoryItem.id)}
+                    className={`flex items-center gap-2 rounded-xl border-2 p-2.5 text-sm transition-all ${
+                      category === categoryItem.id
                         ? "border-violet-400 bg-violet-50 text-violet-700"
                         : "border-gray-100 bg-gray-50 text-gray-700 hover:border-gray-200"
                     }`}
                   >
-                    <span>{cat.emoji}</span>
-                    <span className="text-xs font-medium truncate">{cat.name}</span>
+                    <span>{categoryItem.emoji}</span>
+                    <span className="truncate text-xs font-medium">{categoryItem.name}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Description</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Description</label>
               <textarea
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(event) => setDescription(event.target.value)}
                 placeholder="What's this tier list about?"
                 rows={3}
-                className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:bg-white transition-all resize-none"
+                className="mt-2 w-full resize-none rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
               />
             </div>
 
-            {/* Item Format */}
             <div>
-              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Item Format</label>
-              <p className="text-[11px] text-gray-400 mt-0.5 mb-2">Applies to all items in this list</p>
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Item Format</label>
+              <p className="mt-0.5 mb-2 text-[11px] text-gray-400">Applies to all items in this list</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setItemFormat("text")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${itemFormat === "text" ? "border-violet-400 bg-violet-50 text-violet-700 font-semibold" : "border-gray-100 text-gray-500 hover:border-gray-200"}`}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
+                    itemFormat === "text"
+                      ? "border-violet-400 bg-violet-50 font-semibold text-violet-700"
+                      : "border-gray-100 text-gray-500 hover:border-gray-200"
+                  }`}
                 >
                   <Type size={15} /> Text
                 </button>
                 <button
                   onClick={() => setItemFormat("image")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${itemFormat === "image" ? "border-violet-400 bg-violet-50 text-violet-700 font-semibold" : "border-gray-100 text-gray-500 hover:border-gray-200"}`}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
+                    itemFormat === "image"
+                      ? "border-violet-400 bg-violet-50 font-semibold text-violet-700"
+                      : "border-gray-100 text-gray-500 hover:border-gray-200"
+                  }`}
                 >
                   <Image size={15} /> Image
                 </button>
@@ -560,17 +596,21 @@ export function CreatePage() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Visibility</label>
-              <div className="flex gap-2 mt-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Visibility</label>
+              <div className="mt-2 flex gap-2">
                 <button
                   onClick={() => setIsPublic(true)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"}`}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
+                    isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"
+                  }`}
                 >
                   <Globe size={15} /> Public
                 </button>
                 <button
                   onClick={() => setIsPublic(false)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border-2 transition-all ${!isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"}`}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
+                    !isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"
+                  }`}
                 >
                   <Lock size={15} /> Private
                 </button>
@@ -581,27 +621,26 @@ export function CreatePage() {
           <button
             onClick={() => title && category && setStep(2)}
             disabled={!title || !category}
-            className="w-full bg-violet-600 text-white py-3.5 rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-700 transition-all shadow-lg"
+            className="w-full rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next: Add Items →
           </button>
         </div>
       )}
 
-      {/* ── Step 2: Items ── */}
       {mode === "create-new" && step === 2 && (
-        <div className="px-4 pt-4 pb-8 space-y-4">
+        <div className="space-y-4 px-4 pt-4 pb-8">
           <div className="flex gap-1.5">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-violet-500" : "bg-gray-200"}`} />
+            {[1, 2, 3].map((segment) => (
+              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-violet-500" : "bg-gray-200"}`} />
             ))}
           </div>
-          <p className="text-xs text-gray-400 font-medium">Step 2 of 3 — Add Items</p>
+          <p className="text-xs font-medium text-gray-400">Step 2 of 3 — Add Items</p>
 
-          <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-gray-600 uppercase tracking-wider">Add Items to Rank</label>
-              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Add Items to Rank</label>
+              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">
                 {itemFormat === "text" ? "🔤 Text" : "🖼️ Image"} mode
               </span>
             </div>
@@ -611,19 +650,22 @@ export function CreatePage() {
                 <input
                   type="text"
                   value={newItemEmoji}
-                  onChange={(e) => setNewItemEmoji(e.target.value)}
+                  onChange={(event) => setNewItemEmoji(event.target.value)}
                   placeholder="🎬"
-                  className="w-12 bg-gray-50 rounded-xl text-center py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="w-12 rounded-xl border border-gray-100 bg-gray-50 py-2.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
                 />
                 <input
                   type="text"
                   value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addItem()}
+                  onChange={(event) => setNewItemName(event.target.value)}
+                  onKeyDown={(event) => event.key === "Enter" && addItem()}
                   placeholder="Item name (press Enter)"
-                  className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
                 />
-                <button onClick={addItem} className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center text-white hover:bg-violet-600 transition-colors">
+                <button
+                  onClick={addItem}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500 text-white transition-colors hover:bg-violet-600"
+                >
                   <Plus size={18} />
                 </button>
               </div>
@@ -632,25 +674,35 @@ export function CreatePage() {
                 <input
                   type="text"
                   value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
+                  onChange={(event) => setNewItemName(event.target.value)}
                   placeholder="Item name *"
-                  className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
                 />
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={newItemImageUrl}
-                    onChange={(e) => setNewItemImageUrl(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addItem()}
+                    onChange={(event) => setNewItemImageUrl(event.target.value)}
+                    onKeyDown={(event) => event.key === "Enter" && addItem()}
                     placeholder="Image URL (optional)"
-                    className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
                   />
                   {newItemImageUrl && (
-                    <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-200 flex-shrink-0">
-                      <img src={newItemImageUrl} alt="preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200">
+                      <img
+                        src={newItemImageUrl}
+                        alt="preview"
+                        className="h-full w-full object-cover"
+                        onError={(event) => {
+                          (event.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
                     </div>
                   )}
-                  <button onClick={addItem} className="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center text-white hover:bg-violet-600 transition-colors flex-shrink-0">
+                  <button
+                    onClick={addItem}
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white transition-colors hover:bg-violet-600"
+                  >
                     <Plus size={18} />
                   </button>
                 </div>
@@ -659,17 +711,17 @@ export function CreatePage() {
 
             <div className="mt-4 space-y-2">
               {items.length === 0 ? (
-                <div className="text-center py-8 text-gray-300">
+                <div className="py-8 text-center text-gray-300">
                   <span className="text-3xl">📝</span>
-                  <p className="text-sm mt-2">Add items to rank</p>
+                  <p className="mt-2 text-sm">Add items to rank</p>
                 </div>
               ) : itemFormat === "text" ? (
                 items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                  <div key={item.id} className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2">
                     <GripVertical size={16} className="text-gray-300" />
                     {item.emoji && <span>{item.emoji}</span>}
-                    <span className="text-sm text-gray-800 flex-1">{item.name}</span>
-                    <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                    <span className="flex-1 text-sm text-gray-800">{item.name}</span>
+                    <button onClick={() => removeItem(item.id)} className="text-gray-300 transition-colors hover:text-red-400">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -677,18 +729,22 @@ export function CreatePage() {
               ) : (
                 <div className="flex flex-wrap gap-3 pt-1">
                   {items.map((item) => (
-                    <div key={item.id} className="flex flex-col items-center gap-1 relative">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                    <div key={item.id} className="relative flex flex-col items-center gap-1">
+                      <div className="h-16 w-16 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
+                          <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300"><Image size={22} /></div>
+                          <div className="flex h-full w-full items-center justify-center text-gray-300">
+                            <Image size={22} />
+                          </div>
                         )}
                       </div>
-                      <span className="text-[10px] text-gray-600 text-center max-w-[64px] leading-tight line-clamp-2">{item.name}</span>
+                      <span className="max-w-[64px] text-center text-[10px] leading-tight text-gray-600 line-clamp-2">
+                        {item.name}
+                      </span>
                       <button
                         onClick={() => removeItem(item.id)}
-                        className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full flex items-center justify-center text-white hover:bg-red-500"
+                        className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-400 text-white hover:bg-red-500"
                       >
                         <X size={8} />
                       </button>
@@ -698,19 +754,22 @@ export function CreatePage() {
               )}
             </div>
 
-            <p className="text-xs text-gray-400 mt-3 text-center">
+            <p className="mt-3 text-center text-xs text-gray-400">
               {items.length} item{items.length !== 1 ? "s" : ""} added
             </p>
           </div>
 
           <div className="flex gap-2">
-            <button onClick={() => setStep(1)} className="flex-1 bg-white border border-gray-200 text-gray-600 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition-all">
+            <button
+              onClick={() => setStep(1)}
+              className="flex-1 rounded-2xl border border-gray-200 bg-white py-3.5 font-bold text-gray-600 transition-all hover:bg-gray-50"
+            >
               ← Back
             </button>
             <button
               onClick={() => items.length >= 2 && setStep(3)}
               disabled={items.length < 2}
-              className="flex-1 bg-violet-600 text-white py-3.5 rounded-2xl font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-violet-700 transition-all shadow-lg"
+              className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next: Rank →
             </button>
@@ -718,54 +777,61 @@ export function CreatePage() {
         </div>
       )}
 
-      {/* ── Step 3: Rank ── */}
       {mode === "create-new" && step === 3 && (
-        <div className="px-4 pt-4 pb-8 space-y-4">
+        <div className="space-y-4 px-4 pt-4 pb-8">
           <div className="flex gap-1.5">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className={`h-1 flex-1 rounded-full ${s <= step ? "bg-violet-500" : "bg-gray-200"}`} />
+            {[1, 2, 3].map((segment) => (
+              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-violet-500" : "bg-gray-200"}`} />
             ))}
           </div>
-          <p className="text-xs text-gray-400 font-medium">Step 3 of 3 — Build Your Ranking</p>
+          <p className="text-xs font-medium text-gray-400">Step 3 of 3 — Build Your Ranking</p>
 
-          {/* Tier rows */}
-          <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
             {tiers.map((tier, index) => {
               const bgColor = TIER_COLOR_PALETTE[index % TIER_COLOR_PALETTE.length];
               const isOver = dragOverId === tier.id;
               return (
                 <div
                   key={tier.id}
-                  className={`border-b border-gray-100 last:border-0 transition-colors ${isOver ? "bg-violet-50" : ""}`}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverId(tier.id); }}
-                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null); }}
+                  className={`border-b border-gray-100 transition-colors last:border-0 ${isOver ? "bg-violet-50" : ""}`}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDragOverId(tier.id);
+                  }}
+                  onDragLeave={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                      setDragOverId(null);
+                    }
+                  }}
                   onDrop={() => handleDropOnTier(tier.id)}
                 >
-                  <div className="flex items-stretch min-h-[56px]">
-                    {/* Tier label */}
-                    <div className={`${bgColor} min-w-[3.5rem] px-2 flex items-center justify-center flex-shrink-0`}>
+                  <div className="flex min-h-[56px] items-stretch">
+                    <div className={`${bgColor} min-w-[3.5rem] flex-shrink-0 px-2`}>
                       {editingTierId === tier.id ? (
                         <input
                           autoFocus
                           value={tier.label}
-                          onChange={(e) => renameTier(tier.id, e.target.value)}
+                          onChange={(event) => renameTier(tier.id, event.target.value)}
                           onBlur={() => setEditingTierId(null)}
-                          onKeyDown={(e) => { if (e.key === "Enter") setEditingTierId(null); }}
-                          className="w-full bg-transparent text-white font-black text-sm text-center focus:outline-none border-b border-white/60 min-w-0"
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              setEditingTierId(null);
+                            }
+                          }}
+                          className="h-full w-full min-w-0 border-b border-white/60 bg-transparent text-center text-sm font-black text-white focus:outline-none"
                         />
                       ) : (
                         <button
                           onClick={() => setEditingTierId(tier.id)}
                           title="Click to rename"
-                          className="font-black text-white text-sm text-center w-full h-full flex items-center justify-center hover:bg-black/10 transition-colors leading-tight break-all py-2"
+                          className="flex h-full w-full items-center justify-center break-all py-2 text-center text-sm leading-tight font-black text-white transition-colors hover:bg-black/10"
                         >
                           {tier.label || "?"}
                         </button>
                       )}
                     </div>
 
-                    {/* Items */}
-                    <div className={`flex flex-wrap gap-1.5 p-2 flex-1 min-h-[56px] ${itemFormat === "image" ? "items-start" : "items-center"}`}>
+                    <div className={`flex min-h-[56px] flex-1 flex-wrap gap-1.5 p-2 ${itemFormat === "image" ? "items-start" : "items-center"}`}>
                       {tier.items.map((item) =>
                         itemFormat === "image" ? (
                           <TierImageChip
@@ -784,18 +850,15 @@ export function CreatePage() {
                             onDragEnd={handleDragEnd}
                             onRemove={() => removeFromTier(item, tier.id)}
                           />
-                        )
+                        ),
                       )}
-                      {isOver && tier.items.length === 0 && (
-                        <span className="text-xs text-violet-400 italic self-center">Drop here</span>
-                      )}
+                      {isOver && tier.items.length === 0 && <span className="self-center text-xs italic text-violet-400">Drop here</span>}
                     </div>
 
-                    {/* Delete tier */}
                     {tiers.length > 1 && (
                       <button
                         onClick={() => deleteTier(tier.id)}
-                        className="flex-shrink-0 w-9 flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
+                        className="flex w-9 flex-shrink-0 items-center justify-center text-gray-300 transition-colors hover:bg-red-50 hover:text-red-400"
                         title="Remove tier"
                       >
                         <Trash2 size={14} />
@@ -808,21 +871,18 @@ export function CreatePage() {
 
             <button
               onClick={addTier}
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-violet-500 hover:text-violet-700 hover:bg-violet-50 transition-colors border-t border-gray-100"
+              className="flex w-full items-center justify-center gap-2 border-t border-gray-100 py-2.5 text-sm text-violet-500 transition-colors hover:bg-violet-50 hover:text-violet-700"
             >
               <Plus size={14} /> Add Tier
             </button>
           </div>
 
-          {/* Unranked pool */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Unranked ({getUnrankedItems().length})
-              </p>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Unranked ({getUnrankedItems().length})</p>
               <button
                 onClick={() => setShowAddInRank(!showAddInRank)}
-                className="flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700 font-medium transition-colors"
+                className="flex items-center gap-1 text-xs font-medium text-violet-500 transition-colors hover:text-violet-700"
               >
                 <Plus size={13} />
                 Add item
@@ -845,42 +905,49 @@ export function CreatePage() {
             )}
 
             <div
-              className={`flex flex-wrap gap-2 min-h-[52px] rounded-xl p-2 border-2 border-dashed transition-colors ${
+              className={`min-h-[52px] rounded-xl border-2 border-dashed p-2 transition-colors ${
                 dragOverId === "unranked" ? "border-gray-400 bg-gray-100" : "border-gray-200 bg-white"
               }`}
-              onDragOver={(e) => { e.preventDefault(); setDragOverId("unranked"); }}
-              onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverId(null); }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOverId("unranked");
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                  setDragOverId(null);
+                }
+              }}
               onDrop={handleDropOnUnranked}
             >
-              {getUnrankedItems().map((item) =>
-                itemFormat === "image" ? (
-                  <ImageChip
-                    key={item.id}
-                    item={item}
-                    draggable
-                    onDragStart={() => handleDragStart(item, null)}
-                    onDragEnd={handleDragEnd}
-                    onRemove={() => removeItem(item.id)}
-                  />
-                ) : (
-                  <TextChip
-                    key={item.id}
-                    item={item}
-                    draggable
-                    onDragStart={() => handleDragStart(item, null)}
-                    onDragEnd={handleDragEnd}
-                    onRemove={() => removeItem(item.id)}
-                  />
-                )
-              )}
-              {getUnrankedItems().length === 0 && dragOverId !== "unranked" && (
-                <p className="text-sm text-green-600 font-medium self-center">✅ All items ranked!</p>
-              )}
-              {dragOverId === "unranked" && (
-                <p className="text-sm text-gray-400 italic self-center">Drop to unrank</p>
-              )}
+              <div className="flex flex-wrap gap-2">
+                {getUnrankedItems().map((item) =>
+                  itemFormat === "image" ? (
+                    <ImageChip
+                      key={item.id}
+                      item={item}
+                      draggable
+                      onDragStart={() => handleDragStart(item, null)}
+                      onDragEnd={handleDragEnd}
+                      onRemove={() => removeItem(item.id)}
+                    />
+                  ) : (
+                    <TextChip
+                      key={item.id}
+                      item={item}
+                      draggable
+                      onDragStart={() => handleDragStart(item, null)}
+                      onDragEnd={handleDragEnd}
+                      onRemove={() => removeItem(item.id)}
+                    />
+                  ),
+                )}
+                {getUnrankedItems().length === 0 && dragOverId !== "unranked" && (
+                  <p className="self-center text-sm font-medium text-green-600">✅ All items ranked!</p>
+                )}
+                {dragOverId === "unranked" && <p className="self-center text-sm italic text-gray-400">Drop to unrank</p>}
+              </div>
             </div>
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="mt-2 text-xs text-gray-400">
               Drag items into tiers · Drag between tiers to re-rank · Click a tier label to rename · × to remove an item
             </p>
           </div>
@@ -888,13 +955,13 @@ export function CreatePage() {
           <div className="flex gap-2">
             <button
               onClick={() => setStep(2)}
-              className="flex-1 bg-white border border-gray-200 text-gray-600 py-3.5 rounded-2xl font-bold hover:bg-gray-50 transition-all"
+              className="flex-1 rounded-2xl border border-gray-200 bg-white py-3.5 font-bold text-gray-600 transition-all hover:bg-gray-50"
             >
               ← Back
             </button>
             <button
               onClick={handlePublish}
-              className="flex-1 bg-violet-600 text-white py-3.5 rounded-2xl font-bold hover:bg-violet-700 transition-all shadow-lg"
+              className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700"
             >
               🚀 Publish
             </button>

@@ -1,22 +1,61 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
-import { MOCK_POSTS, USERS } from "../data/mockData";
 import { RankPostCard } from "../components/RankPostCard";
+import { fetchMainFeed } from "../lib/ranksterApi";
+import type { RankPost } from "../lib/feedUi";
+import { useMockSession } from "../lib/useMockSession";
 
 const FILTER_TABS = ["For You", "Following"];
 
 export function HomeFeed() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("For You");
+  const [feedItems, setFeedItems] = useState<RankPost[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
+  const currentUser = session?.user;
 
-  const currentUser = USERS[4]; // "me"
+  useEffect(() => {
+    if (!isAuthLoading && !authError) {
+      void loadFeed();
+    }
+  }, [isAuthLoading, authError]);
+
+  function navigate(path: string) {
+    router.push(path);
+  }
+
+  async function loadFeed(cursor?: string | null) {
+    const isLoadMore = Boolean(cursor);
+
+    if (isLoadMore) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+      setError(null);
+    }
+
+    try {
+      const response = await fetchMainFeed(cursor);
+      setFeedItems((currentItems) => (isLoadMore ? [...currentItems, ...response.items] : response.items));
+      setNextCursor(response.nextCursor);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Failed to load feed.");
+    } finally {
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
         <div className="px-4 pt-12 pb-0">
           <div className="flex items-center justify-between mb-3">
@@ -28,7 +67,7 @@ export function HomeFeed() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => router.push("/leaderboard")}
+                onClick={() => navigate("/leaderboard")}
                 className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-violet-50 text-violet-500 transition-colors"
               >
                 <Flame size={20} />
@@ -38,15 +77,20 @@ export function HomeFeed() {
                 <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
               </button>
               <button
-                onClick={() => router.push("/profile")}
+                onClick={() => navigate("/profile")}
                 className="w-9 h-9 rounded-xl overflow-hidden ring-2 ring-violet-200"
               >
-                <img src={currentUser.avatar} alt="me" className="w-full h-full object-cover" />
+                {currentUser ? (
+                  <Image src={currentUser.avatar} alt={currentUser.displayName} width={36} height={36} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-bold">
+                    Me
+                  </div>
+                )}
               </button>
             </div>
           </div>
 
-          {/* Filter Tabs */}
           <div className="flex gap-1 pb-0">
             {FILTER_TABS.map((tab) => (
               <button
@@ -65,22 +109,51 @@ export function HomeFeed() {
         </div>
       </div>
 
-      {/* Feed */}
       <div className="px-4 py-4 space-y-4">
-        {MOCK_POSTS.map((post) => (
+        {(isAuthLoading || isLoading) && (
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">
+            Loading rankings...
+          </div>
+        )}
+
+        {!isAuthLoading && (authError || error) && (
+          <div className="bg-white border border-red-100 rounded-2xl p-6 text-center">
+            <p className="text-sm text-red-500">{authError || error}</p>
+            <button
+              onClick={() => void loadFeed()}
+              className="mt-4 rounded-xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-600"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!isAuthLoading && !authError && !isLoading && !error && feedItems.map((post) => (
           <RankPostCard
             key={post.id}
             post={post}
-            onProfileClick={(id) => router.push(`/profile/${id}`)}
-            onTopicClick={(postId) => router.push(`/topic/${postId}`)}
+            onProfileClick={() => navigate(`/profile/${post.user.username}`)}
+            onTopicClick={(postId) => navigate(`/topic/${postId}`)}
           />
         ))}
 
-        <div className="text-center py-6">
-          <button className="px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all shadow-sm">
-            Load more rankings
-          </button>
-        </div>
+        {!isAuthLoading && !authError && !isLoading && !error && feedItems.length === 0 && (
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">
+            No posts yet. Start the backend to see the live feed here.
+          </div>
+        )}
+
+        {nextCursor && !error && (
+          <div className="text-center py-6">
+            <button
+              onClick={() => void loadFeed(nextCursor)}
+              disabled={isLoadingMore}
+              className="px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all shadow-sm disabled:opacity-60"
+            >
+              {isLoadingMore ? "Loading..." : "Load more rankings"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

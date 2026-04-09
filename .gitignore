@@ -35,6 +35,8 @@ yarn-error.log*
 *.swo
 *~
 *.iml
+.playwright-cli/
+output/playwright/
 
 # OS
 .DS_Store
