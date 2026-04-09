@@ -106,7 +106,7 @@ export async function fetchCurrentUserProfile() {
 }
 
 export async function fetchUserProfile(username: string) {
-  return apiFetch<ProfileResponse>(`/profile/${encodeURIComponent(username)}`, {}, false);
+  return apiFetch<ProfileResponse>(`/profile/${encodeURIComponent(username)}`);
 }
 
 export async function fetchMainFeed(cursor?: string | null) {
@@ -161,6 +161,38 @@ export async function sendMessage(threadId: string, text: string) {
 export async function fetchLeaderboard() {
   const response = await apiFetch<{ items: LeaderboardEntry[] }>("/leaderboard", {}, false);
   return response.items;
+}
+
+export async function fetchLeaderboardFiltered(timeframe: string, category: string) {
+  const params = new URLSearchParams();
+  params.set("timeframe", timeframe);
+  params.set("category", category);
+  const response = await apiFetch<{ items: LeaderboardEntry[] }>(`/leaderboard?${params.toString()}`, {}, false);
+  return response.items;
+}
+
+export async function followUser(username: string) {
+  return apiFetch<{ isFollowing: boolean }>(`/profile/${encodeURIComponent(username)}/follow`, {
+    method: "POST",
+  });
+}
+
+export async function unfollowUser(username: string) {
+  return apiFetch<{ isFollowing: boolean }>(`/profile/${encodeURIComponent(username)}/follow`, {
+    method: "DELETE",
+  });
+}
+
+export async function pinProfilePost(postId: string) {
+  return apiFetch<{ pinnedPostId: string | null }>(`/profile/me/pinned/${encodeURIComponent(postId)}`, {
+    method: "POST",
+  });
+}
+
+export async function unpinProfilePost(postId: string) {
+  return apiFetch<{ pinnedPostId: string | null }>(`/profile/me/pinned/${encodeURIComponent(postId)}`, {
+    method: "DELETE",
+  });
 }
 
 export async function fetchPost(postId: string) {

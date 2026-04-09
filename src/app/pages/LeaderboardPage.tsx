@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Crown, Minus, TrendingDown, TrendingUp, Trophy } from "lucide-react";
-import { fetchCategories, fetchLeaderboard } from "../lib/ranksterApi";
+import { fetchCategories, fetchLeaderboardFiltered } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
 import type { Category, LeaderboardEntry } from "../lib/feedUi";
 
@@ -25,7 +25,7 @@ export function LeaderboardPage() {
     async function loadLeaderboard() {
       try {
         const [resolvedEntries, resolvedCategories] = await Promise.all([
-          fetchLeaderboard(),
+          fetchLeaderboardFiltered(normalizeTimeframe(timeFilter), normalizeCategory(categoryFilter)),
           fetchCategories(),
         ]);
         if (!cancelled) {
@@ -44,7 +44,7 @@ export function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [categoryFilter, timeFilter]);
 
   const podium = entries.slice(0, 3);
   const currentUserEntry = useMemo(() => {
@@ -297,3 +297,10 @@ function formatPoints(score: number) {
   return (score / 1000).toFixed(1) + "k";
 }
 
+function normalizeTimeframe(value: string) {
+  return value.toLowerCase().replace(/\s+/g, "-");
+}
+
+function normalizeCategory(value: string) {
+  return value === "All" ? "all" : value.toLowerCase();
+}

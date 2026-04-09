@@ -88,9 +88,28 @@ export interface Category {
   color: string;
 }
 
+export interface ProfileStatSummary {
+  totalRankings: number;
+  followers: number;
+  following: number;
+  totalLikes: number;
+}
+
+export interface ProfileCategoryBreakdown {
+  id: string;
+  name: string;
+  emoji: string;
+  pct: number;
+}
+
 export interface ProfileResponse {
   user: User;
   rankings: RankPost[];
+  likedPosts: RankPost[];
+  pinnedPostId: string | null;
+  stats: ProfileStatSummary;
+  favoriteCategories: ProfileCategoryBreakdown[];
+  isFollowing: boolean;
 }
 
 export interface SearchOverviewResponse {
