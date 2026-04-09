@@ -5,11 +5,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
-import { fetchMainFeed, getApiBaseUrl } from "../lib/ranksterApi";
+import { fetchMainFeed } from "../lib/ranksterApi";
 import type { RankPost } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
 
-const FILTER_TABS = ["Following", "For You", "Trending"];
+const FILTER_TABS = ["For You", "Following"];
 
 export function HomeFeed() {
   const router = useRouter();
@@ -20,8 +20,7 @@ export function HomeFeed() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
-  const people = Array.from(new Map(feedItems.map((post) => [post.user.id, post.user])).values());
-  const currentUser = session?.user || people[0];
+  const currentUser = session?.user;
 
   useEffect(() => {
     if (!isAuthLoading && !authError) {
@@ -110,33 +109,10 @@ export function HomeFeed() {
         </div>
       </div>
 
-      <div className="bg-white border-b border-gray-100 px-4 py-3">
-        <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
-          <div className="flex flex-col items-center gap-1 flex-shrink-0">
-            <div className="w-14 h-14 rounded-2xl border-2 border-dashed border-violet-300 flex items-center justify-center bg-violet-50">
-              <span className="text-violet-500 text-xl font-light">+</span>
-            </div>
-            <span className="text-[10px] text-gray-500">Your List</span>
-          </div>
-          {people.slice(0, 4).map((user) => (
-            <button
-              key={user.id}
-              onClick={() => navigate(`/profile/${user.username}`)}
-              className="flex flex-col items-center gap-1 flex-shrink-0"
-            >
-              <div className="w-14 h-14 rounded-2xl ring-2 ring-violet-400 ring-offset-2 overflow-hidden">
-                <Image src={user.avatar} alt={user.displayName} width={56} height={56} className="w-full h-full object-cover" />
-              </div>
-              <span className="text-[10px] text-gray-500 max-w-[56px] truncate">{user.username}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="px-4 py-4 space-y-4">
         {(isAuthLoading || isLoading) && (
           <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">
-            Loading rankings from {getApiBaseUrl()}...
+            Loading rankings...
           </div>
         )}
 
