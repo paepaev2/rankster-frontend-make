@@ -68,7 +68,7 @@ export function HomeFeed() {
               <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center">
                 <Trophy size={16} className="text-white" />
               </div>
-              <span className="text-xl font-black text-gray-900 tracking-tight">Rankit</span>
+              <span className="text-xl font-black text-gray-900 tracking-tight">Rankster</span>
             </div>
             <div className="flex items-center gap-2">
               <button
