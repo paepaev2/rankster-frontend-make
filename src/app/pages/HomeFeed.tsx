@@ -139,6 +139,7 @@ export function HomeFeed() {
             post={post}
             onProfileClick={() => navigate(`/profile/${post.user.username}`)}
             onTopicClick={(postId) => navigate(`/topic/${postId}`)}
+            onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
           />
         ))}
 

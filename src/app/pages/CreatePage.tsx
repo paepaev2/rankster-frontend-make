@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
+import type { RankPost, TierData, TierItem as FeedTierItem, TrendingTopic } from "../lib/feedUi";
+import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics } from "../lib/ranksterApi";
 
 type Mode = "choose" | "create-new" | "rank-existing";
 type ItemFormat = "text" | "image";
@@ -39,6 +41,35 @@ const DEFAULT_TIERS: Tier[] = [
   { id: "tier_C", label: "C", items: [] },
   { id: "tier_D", label: "D", items: [] },
 ];
+
+function createDefaultTiers(): Tier[] {
+  return DEFAULT_TIERS.map((tier) => ({ ...tier, items: [] }));
+}
+
+function mapPostItems(post: RankPost): TierItem[] {
+  return post.allItems.map((item) => ({
+    id: item.id,
+    name: item.name,
+    emoji: item.emoji,
+  }));
+}
+
+function buildTierPayload(tiers: Tier[]): TierData {
+  const toFeedItems = (items: TierItem[] = []): FeedTierItem[] =>
+    items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      emoji: item.emoji,
+    }));
+
+  return {
+    S: toFeedItems(tiers[0]?.items),
+    A: toFeedItems(tiers[1]?.items),
+    B: toFeedItems(tiers[2]?.items),
+    C: toFeedItems(tiers[3]?.items),
+    D: toFeedItems(tiers[4]?.items),
+  };
+}
 
 function TextChip({
   item,
@@ -242,6 +273,7 @@ function RankAddItemRow({
 
 export function CreatePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("choose");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -252,7 +284,7 @@ export function CreatePage() {
   const [newItemEmoji, setNewItemEmoji] = useState("");
   const [newItemImageUrl, setNewItemImageUrl] = useState("");
   const [items, setItems] = useState<TierItem[]>([]);
-  const [tiers, setTiers] = useState<Tier[]>(DEFAULT_TIERS);
+  const [tiers, setTiers] = useState<Tier[]>(createDefaultTiers);
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [showAddInRank, setShowAddInRank] = useState(false);
   const [rankNewName, setRankNewName] = useState("");
@@ -260,12 +292,72 @@ export function CreatePage() {
   const [rankNewImageUrl, setRankNewImageUrl] = useState("");
   const [step, setStep] = useState(1);
   const [searchTopic, setSearchTopic] = useState("");
+  const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>(TRENDING_TOPICS);
+  const [topicsError, setTopicsError] = useState<string | null>(null);
+  const [loadingSourcePostId, setLoadingSourcePostId] = useState<string | null>(null);
+  const [selectedSourcePostId, setSelectedSourcePostId] = useState<string | null>(null);
+  const [selectedSourceTags, setSelectedSourceTags] = useState<string[]>([]);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
   const dragPayload = useRef<{ item: TierItem; fromTierId: string | null } | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
-  const filteredTopics = TRENDING_TOPICS.filter((topic) =>
+  const filteredTopics = trendingTopics.filter((topic) =>
     topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchTrendingTopics()
+      .then((topics) => {
+        if (!cancelled) {
+          setTrendingTopics(topics);
+          setTopicsError(null);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setTopicsError(error instanceof Error ? error.message : "Failed to load trending topics.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const loadSourcePost = useCallback(async (postId: string) => {
+    setLoadingSourcePostId(postId);
+    setPublishError(null);
+
+    try {
+      const post = await fetchPost(postId);
+      setTitle(post.title);
+      setCategory(post.category);
+      setDescription("");
+      setSelectedSourcePostId(post.id);
+      setSelectedSourceTags(post.tags);
+      setItemFormat("text");
+      setItems(mapPostItems(post));
+      setTiers(createDefaultTiers());
+      setMode("create-new");
+      setStep(3);
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : "Failed to load that tier list.");
+    } finally {
+      setLoadingSourcePostId((current) => (current === postId ? null : current));
+    }
+  }, []);
+
+  useEffect(() => {
+    const sourcePostId = searchParams.get("sourcePost");
+    if (!sourcePostId || sourcePostId === selectedSourcePostId || loadingSourcePostId === sourcePostId) {
+      return;
+    }
+
+    void loadSourcePost(sourcePostId);
+  }, [loadSourcePost, loadingSourcePostId, searchParams, selectedSourcePostId]);
 
   const addItem = () => {
     if (!newItemName.trim()) {
@@ -383,17 +475,51 @@ export function CreatePage() {
   };
 
   const handleReset = () => {
+    router.replace("/create");
     setMode("choose");
     setStep(1);
-    setTiers(DEFAULT_TIERS);
+    setTiers(createDefaultTiers());
     setItems([]);
     setTitle("");
+    setDescription("");
     setCategory("");
+    setIsPublic(true);
     setItemFormat("text");
     setShowAddInRank(false);
+    setSearchTopic("");
+    setSelectedSourcePostId(null);
+    setSelectedSourceTags([]);
+    setPublishError(null);
+    setLoadingSourcePostId(null);
   };
 
-  const handlePublish = () => router.push("/");
+  const handlePublish = async () => {
+    setPublishError(null);
+    setIsPublishing(true);
+
+    try {
+      await ensureMockSession();
+      const createdPost = await createRankPost({
+        title,
+        category,
+        description,
+        tags: selectedSourceTags.length > 0 ? selectedSourceTags : [],
+        tiers: buildTierPayload(tiers),
+        allItems: items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          emoji: item.emoji,
+        })),
+        isPublic,
+        sourcePostId: selectedSourcePostId ?? undefined,
+      });
+      router.push(`/topic/${createdPost.id}`);
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : "Failed to publish your ranking.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -449,11 +575,14 @@ export function CreatePage() {
 
           <div className="mt-6">
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Hot Right Now 🔥</h2>
+            {topicsError && <p className="mb-2 text-xs text-red-500">{topicsError}</p>}
             <div className="space-y-2">
-              {TRENDING_TOPICS.slice(0, 3).map((topic) => (
+              {trendingTopics.slice(0, 3).map((topic) => (
                 <button
                   key={topic.id}
-                  onClick={() => setMode("rank-existing")}
+                  onClick={() => {
+                    void loadSourcePost(topic.postId ?? topic.id);
+                  }}
                   className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-violet-200"
                 >
                   <img src={topic.coverImage} alt={topic.title} className="h-10 w-10 rounded-lg object-cover" />
@@ -487,18 +616,7 @@ export function CreatePage() {
               <button
                 key={topic.id}
                 onClick={() => {
-                  setTitle(topic.title);
-                  setCategory(topic.category);
-                  setMode("create-new");
-                  setStep(3);
-                  setTiers(DEFAULT_TIERS);
-                  setItems([
-                    { id: "si1", name: "Item 1" },
-                    { id: "si2", name: "Item 2" },
-                    { id: "si3", name: "Item 3" },
-                    { id: "si4", name: "Item 4" },
-                    { id: "si5", name: "Item 5" },
-                  ]);
+                  void loadSourcePost(topic.postId ?? topic.id);
                 }}
                 className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-violet-200"
               >
@@ -509,6 +627,13 @@ export function CreatePage() {
                   </span>
                   <h3 className="mt-0.5 text-sm font-bold text-gray-900">{topic.title}</h3>
                   <p className="mt-1 text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k participants</p>
+                </div>
+                <div className="flex items-center pr-3">
+                  {loadingSourcePostId === (topic.postId ?? topic.id) ? (
+                    <span className="text-xs font-medium text-violet-500">Loading...</span>
+                  ) : (
+                    <ChevronRight size={16} className="text-gray-400" />
+                  )}
                 </div>
               </button>
             ))}
@@ -785,6 +910,13 @@ export function CreatePage() {
             ))}
           </div>
           <p className="text-xs font-medium text-gray-400">Step 3 of 3 — Build Your Ranking</p>
+          {selectedSourcePostId && (
+            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Ranking Existing Topic</p>
+              <p className="mt-1 text-sm font-semibold text-gray-900">{title}</p>
+              <p className="mt-1 text-xs text-gray-500">We pulled in the real item list so you can make your own ranking.</p>
+            </div>
+          )}
 
           <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
             {tiers.map((tier, index) => {
@@ -960,12 +1092,14 @@ export function CreatePage() {
               ← Back
             </button>
             <button
-              onClick={handlePublish}
-              className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700"
+              onClick={() => void handlePublish()}
+              disabled={isPublishing}
+              className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              🚀 Publish
+              {isPublishing ? "Publishing..." : "🚀 Publish"}
             </button>
           </div>
+          {publishError && <p className="text-sm text-red-500">{publishError}</p>}
         </div>
       )}
     </div>
