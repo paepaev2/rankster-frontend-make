@@ -18,6 +18,8 @@ export interface FeedResponse {
   nextCursor: string | null;
 }
 
+export type FeedScope = "for-you" | "following";
+
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
 const ACCESS_TOKEN_KEY = "rankster.accessToken";
 
@@ -152,9 +154,10 @@ export async function fetchUserProfile(username: string) {
   return apiFetch<ProfileResponse>(`/profile/${encodeURIComponent(username)}`);
 }
 
-export async function fetchMainFeed(cursor?: string | null) {
+export async function fetchMainFeed(scope: FeedScope = "for-you", cursor?: string | null) {
   const params = new URLSearchParams();
   params.set("limit", "20");
+  params.set("scope", scope);
   if (cursor) {
     params.set("cursor", cursor);
   }

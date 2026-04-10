@@ -30,6 +30,7 @@ export function ProfilePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [following, setFollowing] = useState(false);
   const [pinnedPostId, setPinnedPostId] = useState<string | null>(null);
+  const [isFollowUpdating, setIsFollowUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -89,12 +90,16 @@ export function ProfilePage() {
   }, [pinnedPostId, profile]);
 
   const handleFollowToggle = async () => {
-    if (!profile || isMe) {
+    if (!profile || isMe || isFollowUpdating) {
       return;
     }
 
+    const previousFollowing = following;
+    const targetUsername = profile.user.username;
+
     try {
-      const nextFollowing = !following;
+      setIsFollowUpdating(true);
+      const nextFollowing = !previousFollowing;
       setFollowing(nextFollowing);
       setProfile((current) =>
         current
@@ -107,25 +112,37 @@ export function ProfilePage() {
             }
           : current,
       );
-      if (nextFollowing) {
-        await followUser(profile.user.username);
-      } else {
-        await unfollowUser(profile.user.username);
-      }
+
+      const response = nextFollowing
+        ? await followUser(targetUsername)
+        : await unfollowUser(targetUsername);
+
+      setFollowing(response.isFollowing);
+      setProfile((current) =>
+        current
+          ? {
+              ...current,
+              isFollowing: response.isFollowing,
+            }
+          : current,
+      );
     } catch (followError) {
-      setFollowing((current) => !current);
+      setFollowing(previousFollowing);
       setProfile((current) =>
         current
           ? {
               ...current,
               user: {
                 ...current.user,
-                followers: Math.max(current.user.followers + (following ? 1 : -1), 0),
+                followers: Math.max(current.user.followers + (previousFollowing ? 1 : -1), 0),
               },
+              isFollowing: previousFollowing,
             }
           : current,
       );
       setError(followError instanceof Error ? followError.message : "Failed to update follow state.");
+    } finally {
+      setIsFollowUpdating(false);
     }
   };
 
@@ -249,14 +266,15 @@ export function ProfilePage() {
               ) : (
                 <button
                   onClick={() => void handleFollowToggle()}
+                  disabled={isFollowUpdating}
                   className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
                     following
                       ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       : "bg-violet-600 text-white hover:bg-violet-700"
-                  }`}
+                  } ${isFollowUpdating ? "opacity-70" : ""}`}
                 >
                   {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
-                  {following ? "Following" : "Follow"}
+                  {isFollowUpdating ? "Updating..." : following ? "Following" : "Follow"}
                 </button>
               )}
             </div>
