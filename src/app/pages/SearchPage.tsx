@@ -202,7 +202,7 @@ export function SearchPage() {
                   topic={topic}
                   index={index}
                   category={categoryMap.get(topic.category)}
-                  onOpen={() => router.push(`/topic/${topic.id}`)}
+                  onOpen={() => router.push(`/topic/${topic.postId ?? topic.id}`)}
                 />
               ))}
             </div>
@@ -266,4 +266,3 @@ function formatCount(value: number) {
   }
   return value.toString();
 }
-
