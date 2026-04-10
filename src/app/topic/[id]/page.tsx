@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { RankPostCard } from "@/app/components/RankPostCard";
 import type { RankPost } from "@/app/lib/feedUi";
 import { fetchPost } from "@/app/lib/ranksterApi";
 
 export default function Topic() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const [post, setPost] = useState<RankPost | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +35,11 @@ export default function Topic() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 pt-12 pb-24">
       <div className="mx-auto max-w-lg">
-        <RankPostCard post={post} />
+        <RankPostCard
+          post={post}
+          onProfileClick={() => router.push(`/profile/${post.user.username}`)}
+          onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+        />
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ interface RankPostCardProps {
   post: RankPost;
   onProfileClick?: (userId: string) => void;
   onTopicClick?: (postId: string) => void;
+  onRankThis?: (postId: string) => void;
 }
 
 // ── Canvas helpers ────────────────────────────────────────────────────────────
@@ -322,7 +323,7 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
 
 type ShareState = "idle" | "generating" | "done" | "error";
 
-export function RankPostCard({ post, onProfileClick, onTopicClick }: RankPostCardProps) {
+export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }: RankPostCardProps) {
   const [liked, setLiked] = useState(post.isLiked);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [saved, setSaved] = useState(false);
@@ -507,6 +508,17 @@ export function RankPostCard({ post, onProfileClick, onTopicClick }: RankPostCar
           </span>
         ))}
       </div>
+
+      {onRankThis && (
+        <div className="px-4 pt-3">
+          <button
+            onClick={() => onRankThis(post.id)}
+            className="w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100"
+          >
+            Rank This Yourself
+          </button>
+        </div>
+      )}
 
       {/* IG generating overlay */}
       {igState === "generating" && (
