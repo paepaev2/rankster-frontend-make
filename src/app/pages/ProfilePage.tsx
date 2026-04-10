@@ -37,6 +37,10 @@ export function ProfilePage() {
       return;
     }
 
+    if (isMe && !session) {
+      return;
+    }
+
     let cancelled = false;
 
     async function loadProfile() {
@@ -145,7 +149,27 @@ export function ProfilePage() {
     }
   };
 
-  if ((isMe && (isAuthLoading || !session)) || (!profile && !error)) {
+  if (isMe && isAuthLoading) {
+    return <div className="px-4 pt-16 text-sm text-gray-500">Loading profile...</div>;
+  }
+
+  if (isMe && !session) {
+    return (
+      <div className="px-4 pt-16">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
+          <p className="text-sm text-gray-700">Sign in to see your profile, likes, and stats.</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+          >
+            Go to login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile && !error) {
     return <div className="px-4 pt-16 text-sm text-gray-500">Loading profile...</div>;
   }
 
@@ -429,4 +453,3 @@ function formatFollowers(value: number) {
   }
   return value.toString();
 }
-

@@ -19,7 +19,7 @@ export interface FeedResponse {
 }
 
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
-const ACCESS_TOKEN_KEY = "rankster.mock.accessToken";
+const ACCESS_TOKEN_KEY = "rankster.accessToken";
 
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -29,7 +29,7 @@ export function getApiBaseUrl() {
   return normalizeBaseUrl(process.env.NEXT_PUBLIC_RANKSTER_API_URL ?? DEFAULT_API_BASE_URL);
 }
 
-function getStoredAccessToken() {
+export function getStoredAccessToken() {
   if (typeof window === "undefined") {
     return null;
   }
@@ -43,6 +43,18 @@ function setStoredAccessToken(token: string) {
   }
 
   window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+}
+
+export function clearStoredAccessToken() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
+}
+
+function isMockAuthEnabled() {
+  return process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === "true";
 }
 
 async function apiFetch<T>(path: string, init: RequestInit = {}, requireAuth = true): Promise<T> {
@@ -72,7 +84,20 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, requireAuth = t
   return (await response.json()) as T;
 }
 
-export async function ensureMockSession(username = "me") {
+async function createMockSession(username = "me") {
+  const session = await apiFetch<AuthSession>(
+    "/auth/mock-login",
+    {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    },
+    false,
+  );
+  setStoredAccessToken(session.accessToken);
+  return session;
+}
+
+export async function resolveSession(username = "me") {
   const token = getStoredAccessToken();
   if (token) {
     try {
@@ -83,21 +108,39 @@ export async function ensureMockSession(username = "me") {
         user: response.user,
       } satisfies AuthSession;
     } catch {
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-      }
+      clearStoredAccessToken();
     }
   }
 
+  if (isMockAuthEnabled()) {
+    return createMockSession(username);
+  }
+
+  return null;
+}
+
+export async function loginWithGoogleCredential(credential: string) {
   const session = await apiFetch<AuthSession>(
-    "/auth/mock-login",
+    "/auth/google",
     {
       method: "POST",
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ credential }),
     },
     false,
   );
   setStoredAccessToken(session.accessToken);
+  return session;
+}
+
+export function logout() {
+  clearStoredAccessToken();
+}
+
+export async function ensureMockSession(username = "me") {
+  const session = await resolveSession(username);
+  if (!session) {
+    throw new Error("You need to sign in to continue.");
+  }
   return session;
 }
 

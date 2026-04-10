@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Image as ImageIcon, Search, Send, Smile } from "lucide-react";
 import { fetchMessageThread, fetchMessageThreads, sendMessage } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
 import type { Message, MessageThreadDetail } from "../lib/feedUi";
 
 export function DMPage() {
+  const router = useRouter();
   const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
   const [threads, setThreads] = useState<Message[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
@@ -122,8 +124,24 @@ export function DMPage() {
     }
   };
 
-  if (isAuthLoading || !session) {
+  if (isAuthLoading) {
     return <div className="px-4 pt-16 text-sm text-gray-500">Loading messages...</div>;
+  }
+
+  if (!session) {
+    return (
+      <div className="px-4 pt-16">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
+          <p className="text-sm text-gray-700">Sign in to open your direct messages.</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+          >
+            Go to login
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (activeThreadId) {
@@ -319,4 +337,3 @@ export function DMPage() {
     </div>
   );
 }
-
