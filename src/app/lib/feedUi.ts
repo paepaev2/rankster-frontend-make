@@ -140,6 +140,7 @@ export interface CreateRankInput {
   tiers: TierData;
   allItems: TierItem[];
   isPublic: boolean;
+  sourcePostId?: string;
 }
 
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
