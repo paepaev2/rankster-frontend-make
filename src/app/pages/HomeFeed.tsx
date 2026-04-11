@@ -178,6 +178,15 @@ export function HomeFeed() {
             onProfileClick={() => navigate(`/profile/${post.user.username}`)}
             onTopicClick={(postId) => navigate(`/topic/${postId}`)}
             onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+            onEditTierList={(postId) => navigate(`/create?editPost=${encodeURIComponent(postId)}`)}
+            onPostUpdated={(updatedPost) => {
+              setFeedItems((currentItems) =>
+                currentItems.map((currentPost) => (currentPost.id === updatedPost.id ? updatedPost : currentPost)),
+              );
+            }}
+            onPostDeleted={(postId) => {
+              setFeedItems((currentItems) => currentItems.filter((currentPost) => currentPost.id !== postId));
+            }}
           />
         ))}
 

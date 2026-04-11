@@ -15,6 +15,7 @@ import type {
   RankPost,
   SearchOverviewResponse,
   TrendingTopic,
+  UpdateRankPostInput,
   User,
 } from "./feedUi";
 
@@ -230,6 +231,19 @@ export async function createRankPost(input: CreateRankInput) {
   });
 }
 
+export async function updateRankPost(postId: string, input: UpdateRankPostInput) {
+  return apiFetch<RankPost>(`/feed/post/${encodeURIComponent(postId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteRankPost(postId: string) {
+  return apiFetch<{ deleted: boolean }>(`/feed/post/${encodeURIComponent(postId)}`, {
+    method: "DELETE",
+  });
+}
+
 export async function fetchMessageThreads() {
   const response = await apiFetch<{ items: Message[] }>("/messages/threads");
   return response.items;
@@ -343,5 +357,5 @@ export async function unpinProfilePost(postId: string) {
 }
 
 export async function fetchPost(postId: string) {
-  return apiFetch<RankPost>(`/feed/post/${encodeURIComponent(postId)}`, {}, false);
+  return apiFetch<RankPost>(`/feed/post/${encodeURIComponent(postId)}`);
 }

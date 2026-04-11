@@ -50,6 +50,7 @@ export interface RankPost {
   createdAt: string;
   isPublic: boolean;
   participantCount: number;
+  canEdit: boolean;
 }
 
 export interface Message {
@@ -181,6 +182,8 @@ export interface CreateRankInput {
   isPublic: boolean;
   sourcePostId?: string;
 }
+
+export type UpdateRankPostInput = Pick<CreateRankInput, "title" | "category" | "description" | "tags" | "tiers" | "allItems" | "isPublic">;
 
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   S: { bg: "bg-red-500", text: "text-white", border: "border-red-600" },

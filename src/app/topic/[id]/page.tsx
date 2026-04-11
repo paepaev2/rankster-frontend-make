@@ -39,6 +39,9 @@ export default function Topic() {
           post={post}
           onProfileClick={() => router.push(`/profile/${post.user.username}`)}
           onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+          onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
+          onPostUpdated={setPost}
+          onPostDeleted={() => router.push("/")}
         />
       </div>
     </div>

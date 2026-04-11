@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
 import type { RankPost, TierData, TierItem as FeedTierItem, TrendingTopic } from "../lib/feedUi";
-import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics } from "../lib/ranksterApi";
+import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost } from "../lib/ranksterApi";
 
 type Mode = "choose" | "create-new" | "rank-existing";
 type ItemFormat = "text" | "image";
@@ -47,11 +47,34 @@ function createDefaultTiers(): Tier[] {
 }
 
 function mapPostItems(post: RankPost): TierItem[] {
-  return post.allItems.map((item) => ({
-    id: item.id,
-    name: item.name,
-    emoji: item.emoji,
-  }));
+  const itemsById = new Map<string, TierItem>();
+
+  [...post.allItems, ...Object.values(post.tiers).flat()].forEach((item) => {
+    itemsById.set(item.id, {
+      id: item.id,
+      name: item.name,
+      emoji: item.emoji,
+    });
+  });
+
+  return Array.from(itemsById.values());
+}
+
+function mapPostTierData(post: RankPost): Tier[] {
+  const toTierItems = (items: FeedTierItem[]): TierItem[] =>
+    items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      emoji: item.emoji,
+    }));
+
+  return [
+    { id: "tier_S", label: "S", items: toTierItems(post.tiers.S) },
+    { id: "tier_A", label: "A", items: toTierItems(post.tiers.A) },
+    { id: "tier_B", label: "B", items: toTierItems(post.tiers.B) },
+    { id: "tier_C", label: "C", items: toTierItems(post.tiers.C) },
+    { id: "tier_D", label: "D", items: toTierItems(post.tiers.D) },
+  ];
 }
 
 function buildTierPayload(tiers: Tier[]): TierData {
@@ -295,8 +318,10 @@ export function CreatePage() {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>(TRENDING_TOPICS);
   const [topicsError, setTopicsError] = useState<string | null>(null);
   const [loadingSourcePostId, setLoadingSourcePostId] = useState<string | null>(null);
+  const [loadingEditPostId, setLoadingEditPostId] = useState<string | null>(null);
   const [selectedSourcePostId, setSelectedSourcePostId] = useState<string | null>(null);
   const [selectedSourceTags, setSelectedSourceTags] = useState<string[]>([]);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const dragPayload = useRef<{ item: TierItem; fromTierId: string | null } | null>(null);
@@ -336,6 +361,7 @@ export function CreatePage() {
       setTitle(post.title);
       setCategory(post.category);
       setDescription("");
+      setEditingPostId(null);
       setSelectedSourcePostId(post.id);
       setSelectedSourceTags(post.tags);
       setItemFormat("text");
@@ -350,7 +376,45 @@ export function CreatePage() {
     }
   }, []);
 
+  const loadEditPost = useCallback(async (postId: string) => {
+    setLoadingEditPostId(postId);
+    setPublishError(null);
+
+    try {
+      await ensureMockSession();
+      const post = await fetchPost(postId);
+      if (!post.canEdit) {
+        throw new Error("You can only edit your own ranking.");
+      }
+
+      setTitle(post.title);
+      setCategory(post.category);
+      setDescription(post.description);
+      setIsPublic(post.isPublic);
+      setSelectedSourcePostId(null);
+      setSelectedSourceTags(post.tags);
+      setItemFormat("text");
+      setItems(mapPostItems(post));
+      setTiers(mapPostTierData(post));
+      setMode("create-new");
+      setStep(3);
+      setEditingPostId(post.id);
+      setShowAddInRank(false);
+      setRankNewName("");
+      setRankNewEmoji("");
+      setRankNewImageUrl("");
+    } catch (error) {
+      setPublishError(error instanceof Error ? error.message : "Failed to load that ranking for editing.");
+    } finally {
+      setLoadingEditPostId((current) => (current === postId ? null : current));
+    }
+  }, []);
+
   useEffect(() => {
+    if (searchParams.get("editPost")) {
+      return;
+    }
+
     const sourcePostId = searchParams.get("sourcePost");
     if (!sourcePostId || sourcePostId === selectedSourcePostId || loadingSourcePostId === sourcePostId) {
       return;
@@ -358,6 +422,15 @@ export function CreatePage() {
 
     void loadSourcePost(sourcePostId);
   }, [loadSourcePost, loadingSourcePostId, searchParams, selectedSourcePostId]);
+
+  useEffect(() => {
+    const editPostId = searchParams.get("editPost");
+    if (!editPostId || editPostId === editingPostId || loadingEditPostId === editPostId) {
+      return;
+    }
+
+    void loadEditPost(editPostId);
+  }, [editingPostId, loadEditPost, loadingEditPostId, searchParams]);
 
   const addItem = () => {
     if (!newItemName.trim()) {
@@ -489,8 +562,10 @@ export function CreatePage() {
     setSearchTopic("");
     setSelectedSourcePostId(null);
     setSelectedSourceTags([]);
+    setEditingPostId(null);
     setPublishError(null);
     setLoadingSourcePostId(null);
+    setLoadingEditPostId(null);
   };
 
   const handlePublish = async () => {
@@ -499,7 +574,7 @@ export function CreatePage() {
 
     try {
       await ensureMockSession();
-      const createdPost = await createRankPost({
+      const payload = {
         title,
         category,
         description,
@@ -511,11 +586,16 @@ export function CreatePage() {
           emoji: item.emoji,
         })),
         isPublic,
-        sourcePostId: selectedSourcePostId ?? undefined,
-      });
-      router.push(`/topic/${createdPost.id}`);
+      };
+      const savedPost = editingPostId
+        ? await updateRankPost(editingPostId, payload)
+        : await createRankPost({
+            ...payload,
+            sourcePostId: selectedSourcePostId ?? undefined,
+          });
+      router.push(`/topic/${savedPost.id}`);
     } catch (error) {
-      setPublishError(error instanceof Error ? error.message : "Failed to publish your ranking.");
+      setPublishError(error instanceof Error ? error.message : "Failed to save your ranking.");
     } finally {
       setIsPublishing(false);
     }
@@ -529,11 +609,11 @@ export function CreatePage() {
             <X size={22} />
           </button>
           <h1 className="text-base font-bold text-gray-900">
-            {mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
+            {editingPostId ? "Edit Tier List" : mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
           </h1>
           {mode !== "choose" ? (
             <button onClick={handleReset} className="text-sm font-medium text-violet-500">
-              Reset
+              {editingPostId ? "Cancel" : "Reset"}
             </button>
           ) : (
             <div className="w-8" />
@@ -910,6 +990,13 @@ export function CreatePage() {
             ))}
           </div>
           <p className="text-xs font-medium text-gray-400">Step 3 of 3 — Build Your Ranking</p>
+          {editingPostId && (
+            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Editing Your Ranking</p>
+              <p className="mt-1 text-sm font-semibold text-gray-900">{title}</p>
+              <p className="mt-1 text-xs text-gray-500">Saving here updates the original post instead of creating a new one.</p>
+            </div>
+          )}
           {selectedSourcePostId && (
             <div className="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
               <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Ranking Existing Topic</p>
@@ -1096,7 +1183,7 @@ export function CreatePage() {
               disabled={isPublishing}
               className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isPublishing ? "Publishing..." : "🚀 Publish"}
+              {isPublishing ? (editingPostId ? "Saving..." : "Publishing...") : editingPostId ? "Save changes" : "🚀 Publish"}
             </button>
           </div>
           {publishError && <p className="text-sm text-red-500">{publishError}</p>}

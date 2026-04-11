@@ -4,17 +4,20 @@ import React, { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronDown, ChevronUp, Loader2, Download, Check } from "lucide-react";
-import type { Comment as RankPostComment, RankPost, TierData } from "../lib/feedUi";
+import type { Comment as RankPostComment, RankPost } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
-import { createComment, likeComment, unlikeComment } from "../lib/ranksterApi";
+import { createComment, deleteRankPost, likeComment, unlikeComment, updateRankPost } from "../lib/ranksterApi";
 
 interface RankPostCardProps {
   post: RankPost;
   onProfileClick?: (userId: string) => void;
   onTopicClick?: (postId: string) => void;
   onRankThis?: (postId: string) => void;
+  onEditTierList?: (postId: string) => void;
+  onPostUpdated?: (post: RankPost) => void;
+  onPostDeleted?: (postId: string) => void;
 }
 
 // ── Canvas helpers ────────────────────────────────────────────────────────────
@@ -326,18 +329,37 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
 
 type ShareState = "idle" | "generating" | "done" | "error";
 
-export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }: RankPostCardProps) {
-  const [liked, setLiked] = useState(post.isLiked);
-  const [likeCount, setLikeCount] = useState(post.likes);
+export function RankPostCard({
+  post: initialPost,
+  onProfileClick,
+  onTopicClick,
+  onRankThis,
+  onEditTierList,
+  onPostUpdated,
+  onPostDeleted,
+}: RankPostCardProps) {
+  const [post, setPost] = useState(initialPost);
+  const [liked, setLiked] = useState(initialPost.isLiked);
+  const [likeCount, setLikeCount] = useState(initialPost.likes);
   const { savedIds, toggleSave } = useSaved();
   const saved = savedIds.has(post.id);
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<RankPostComment[]>(post.comments);
+  const [comments, setComments] = useState<RankPostComment[]>(initialPost.comments);
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [pendingCommentLikeIds, setPendingCommentLikeIds] = useState<Set<string>>(() => new Set());
+  const [postActionOpen, setPostActionOpen] = useState(false);
+  const [postActionError, setPostActionError] = useState<string | null>(null);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [isPostSaving, setIsPostSaving] = useState(false);
+  const [isPostDeleting, setIsPostDeleting] = useState(false);
+  const [editTitle, setEditTitle] = useState(initialPost.title);
+  const [editDescription, setEditDescription] = useState(initialPost.description);
+  const [editCategory, setEditCategory] = useState(initialPost.category);
+  const [editTags, setEditTags] = useState(initialPost.tags.join(", "));
+  const [editIsPublic, setEditIsPublic] = useState(initialPost.isPublic);
   const [shareOpen, setShareOpen] = useState(false);
   const [igState, setIgState] = useState<ShareState>("idle");
   const [igToast, setIgToast] = useState<string | null>(null);
@@ -345,8 +367,16 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
   const category = CATEGORIES.find((c) => c.id === post.category);
 
   useEffect(() => {
-    setComments(post.comments);
-  }, [post.comments, post.id]);
+    setPost(initialPost);
+    setLiked(initialPost.isLiked);
+    setLikeCount(initialPost.likes);
+    setComments(initialPost.comments);
+    setEditTitle(initialPost.title);
+    setEditDescription(initialPost.description);
+    setEditCategory(initialPost.category);
+    setEditTags(initialPost.tags.join(", "));
+    setEditIsPublic(initialPost.isPublic);
+  }, [initialPost]);
 
   const handleLike = () => {
     setLiked(!liked);
@@ -419,6 +449,68 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
       await navigator.clipboard.writeText(`${window.location.origin}/topic/${post.id}`);
     } catch {
       // ignore
+    }
+  };
+
+  const handleStartEditPost = () => {
+    setEditTitle(post.title);
+    setEditDescription(post.description);
+    setEditCategory(post.category);
+    setEditTags(post.tags.join(", "));
+    setEditIsPublic(post.isPublic);
+    setPostActionError(null);
+    setPostActionOpen(false);
+    setIsEditingPost(true);
+  };
+
+  const handleSavePost = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const title = editTitle.trim();
+    const category = editCategory.trim();
+    if (!title || !category || isPostSaving) {
+      return;
+    }
+
+    setIsPostSaving(true);
+    setPostActionError(null);
+    try {
+      const updatedPost = await updateRankPost(post.id, {
+        title,
+        category,
+        description: editDescription.trim(),
+        tags: editTags
+          .split(",")
+          .map((tag) => tag.trim().replace(/^#/, ""))
+          .filter(Boolean),
+        tiers: post.tiers,
+        allItems: post.allItems,
+        isPublic: editIsPublic,
+      });
+      setPost(updatedPost);
+      setIsEditingPost(false);
+      onPostUpdated?.(updatedPost);
+    } catch (error) {
+      setPostActionError(error instanceof Error ? error.message : "Could not update this post.");
+    } finally {
+      setIsPostSaving(false);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (isPostDeleting || !window.confirm("Delete this ranking post? This cannot be undone.")) {
+      return;
+    }
+
+    setIsPostDeleting(true);
+    setPostActionError(null);
+    setPostActionOpen(false);
+    try {
+      await deleteRankPost(post.id);
+      onPostDeleted?.(post.id);
+    } catch (error) {
+      setPostActionError(error instanceof Error ? error.message : "Could not delete this post.");
+    } finally {
+      setIsPostDeleting(false);
     }
   };
 
@@ -506,10 +598,141 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
             </div>
           </div>
         </div>
-        <button className="text-gray-400 hover:text-gray-600 p-1">
-          <MoreHorizontal size={18} />
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => post.canEdit && setPostActionOpen(!postActionOpen)}
+            className="text-gray-400 hover:text-gray-600 p-1"
+            aria-label={post.canEdit ? "Open post actions" : "More post options"}
+            aria-expanded={post.canEdit ? postActionOpen : undefined}
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          {post.canEdit && postActionOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setPostActionOpen(false)} />
+              <div className="absolute right-0 top-8 z-20 min-w-[160px] overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                <button
+                  type="button"
+                  onClick={handleStartEditPost}
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  Edit post
+                </button>
+                {onEditTierList ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPostActionOpen(false);
+                      onEditTierList(post.id);
+                    }}
+                    className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  >
+                    Edit tier list
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleDeletePost}
+                  disabled={isPostDeleting}
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPostDeleting ? "Deleting..." : "Delete post"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {postActionError ? (
+        <div className="mx-4 mb-3 rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">
+          {postActionError}
+        </div>
+      ) : null}
+
+      {isEditingPost ? (
+        <form onSubmit={handleSavePost} className="mx-4 mb-3 space-y-3 rounded-2xl border border-violet-100 bg-violet-50/60 p-3">
+          <div>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+              Title
+            </label>
+            <input
+              value={editTitle}
+              onChange={(event) => setEditTitle(event.target.value)}
+              className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              placeholder="Ranking title"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+              Description
+            </label>
+            <textarea
+              value={editDescription}
+              onChange={(event) => setEditDescription(event.target.value)}
+              className="min-h-20 w-full resize-none rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              placeholder="What is this ranking about?"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+                Category
+              </label>
+              <select
+                value={editCategory}
+                onChange={(event) => setEditCategory(event.target.value)}
+                className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              >
+                {CATEGORIES.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.emoji} {option.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+                Tags
+              </label>
+              <input
+                value={editTags}
+                onChange={(event) => setEditTags(event.target.value)}
+                className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+                placeholder="anime, sports, food"
+              />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+            <input
+              type="checkbox"
+              checked={editIsPublic}
+              onChange={(event) => setEditIsPublic(event.target.checked)}
+              className="h-4 w-4 rounded border-violet-200 text-violet-600 focus:ring-violet-500"
+            />
+            Public post
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={isPostSaving || editTitle.trim() === ""}
+              className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+            >
+              {isPostSaving ? "Saving..." : "Save changes"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditingPost(false);
+                setPostActionError(null);
+              }}
+              className="rounded-xl bg-white px-4 py-2 text-xs font-bold text-gray-500 transition-colors hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       {/* Cover Image & Title */}
       <button onClick={() => onTopicClick?.(post.id)} className="w-full text-left">
