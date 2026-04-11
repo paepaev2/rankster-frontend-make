@@ -72,6 +72,14 @@ export interface MessageThreadDetail {
   messages: ChatMessage[];
 }
 
+export interface ChatSocketEvent {
+  type: "ready" | "message" | "error";
+  threadId: string;
+  message?: ChatMessage;
+  error?: string;
+  timestamp: string;
+}
+
 export interface TrendingTopic {
   id: string;
   postId?: string;
