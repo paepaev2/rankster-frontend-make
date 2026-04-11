@@ -66,7 +66,7 @@ export function clearStoredAccessToken() {
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
 }
 
-function isMockAuthEnabled() {
+export function isMockAuthEnabled() {
   return process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === "true";
 }
 
@@ -143,6 +143,13 @@ export async function loginWithGoogleCredential(credential: string) {
   );
   setStoredAccessToken(session.accessToken);
   return session;
+}
+
+export async function loginWithMockUser(username: string) {
+  if (!isMockAuthEnabled()) {
+    throw new Error("Mock auth is not enabled.");
+  }
+  return createMockSession(username);
 }
 
 export function logout() {
