@@ -179,6 +179,10 @@ export function DMPage() {
       .then((thread) => {
         if (!cancelled) {
           setActiveThread(thread);
+          setThreads((currentThreads) =>
+            currentThreads.map((item) => (item.id === thread.id ? { ...item, unread: 0 } : item)),
+          );
+          window.dispatchEvent(new Event("rankster:messages-read"));
         }
       })
       .catch((threadError) => {
@@ -323,8 +327,8 @@ export function DMPage() {
     const activeChatUser = activeThread?.user ?? threads.find((thread) => thread.id === activeThreadId)?.user;
 
     return (
-      <div className="flex h-[calc(100vh-5rem)] flex-col bg-white">
-        <div className="flex items-center gap-3 border-b border-gray-100 bg-white/95 px-4 pt-12 pb-4 backdrop-blur-md">
+      <div className="fixed top-0 bottom-16 left-1/2 z-40 flex w-full max-w-lg -translate-x-1/2 flex-col overflow-hidden bg-white">
+        <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-100 bg-white/95 px-4 pt-12 pb-4 backdrop-blur-md">
           <button onClick={() => setActiveThreadId(null)} className="text-gray-500 transition-colors hover:text-gray-700" aria-label="Back to messages">
             <ArrowLeft size={22} />
           </button>
@@ -358,7 +362,7 @@ export function DMPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {isThreadLoading ? (
             <DMConversationSkeleton />
           ) : (

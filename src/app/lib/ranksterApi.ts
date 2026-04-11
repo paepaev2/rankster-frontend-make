@@ -5,8 +5,12 @@ import type {
   CreateRankInput,
   LeaderboardEntry,
   Message,
+  MessageInboxSocketEvent,
   MessageThreadDetail,
+  NotificationSocketEvent,
+  NotificationsResponse,
   ProfileResponse,
+  RanksterNotification,
   RankPost,
   SearchOverviewResponse,
   TrendingTopic,
@@ -211,6 +215,11 @@ export async function fetchMessageThreads() {
   return response.items;
 }
 
+export async function fetchMessageUnreadCount() {
+  const response = await apiFetch<{ unreadCount: number }>("/messages/unread-count");
+  return response.unreadCount;
+}
+
 export async function fetchMessageThread(threadId: string) {
   return apiFetch<MessageThreadDetail>(`/messages/threads/${encodeURIComponent(threadId)}`);
 }
@@ -230,6 +239,50 @@ export function getMessageThreadSocketUrl(threadId: string) {
 
   const params = new URLSearchParams({ token });
   return `${getWebSocketBaseUrl()}/messages/threads/${encodeURIComponent(threadId)}/ws?${params.toString()}`;
+}
+
+export function getMessageInboxSocketUrl() {
+  const token = getStoredAccessToken();
+  if (!token) {
+    throw new Error("You need to sign in to open realtime message alerts.");
+  }
+
+  const params = new URLSearchParams({ token });
+  return `${getWebSocketBaseUrl()}/messages/ws?${params.toString()}`;
+}
+
+export function parseMessageInboxSocketEvent(data: string) {
+  return JSON.parse(data) as MessageInboxSocketEvent;
+}
+
+export async function fetchNotifications() {
+  return apiFetch<NotificationsResponse>("/notifications");
+}
+
+export function getNotificationsSocketUrl() {
+  const token = getStoredAccessToken();
+  if (!token) {
+    throw new Error("You need to sign in to open realtime notifications.");
+  }
+
+  const params = new URLSearchParams({ token });
+  return `${getWebSocketBaseUrl()}/notifications/ws?${params.toString()}`;
+}
+
+export function parseNotificationSocketEvent(data: string) {
+  return JSON.parse(data) as NotificationSocketEvent;
+}
+
+export async function markNotificationRead(notificationId: string) {
+  return apiFetch<RanksterNotification>(`/notifications/${encodeURIComponent(notificationId)}/read`, {
+    method: "POST",
+  });
+}
+
+export async function markAllNotificationsRead() {
+  return apiFetch<NotificationsResponse>("/notifications/read-all", {
+    method: "POST",
+  });
 }
 
 export async function fetchLeaderboard() {
