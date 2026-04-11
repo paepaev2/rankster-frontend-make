@@ -15,6 +15,9 @@ import {
 import type { RanksterNotification } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
 
+const NOTIFICATION_POP_MS = 4500;
+const AUTO_MARK_READ_MS = 2200;
+
 function NotificationSkeleton() {
   return (
     <div className="space-y-2 px-4 py-4">
@@ -62,6 +65,58 @@ export function NotificationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [freshNotificationIds, setFreshNotificationIds] = useState<string[]>([]);
   const freshTimersRef = useRef<number[]>([]);
+  const autoReadTimersRef = useRef<number[]>([]);
+
+  function showTemporaryNotificationState(notificationId: string) {
+    setFreshNotificationIds((current) =>
+      current.includes(notificationId) ? current : [...current, notificationId],
+    );
+
+    const timer = window.setTimeout(() => {
+      setFreshNotificationIds((current) => current.filter((id) => id !== notificationId));
+    }, NOTIFICATION_POP_MS);
+    freshTimersRef.current.push(timer);
+  }
+
+  function markNotificationSeenLocally(notificationId: string) {
+    setNotifications((current) =>
+      current.map((item) => (item.id === notificationId ? { ...item, read: true } : item)),
+    );
+    setUnreadCount((current) => Math.max(current - 1, 0));
+  }
+
+  function scheduleAutoMarkRead(notificationId: string) {
+    const timer = window.setTimeout(() => {
+      markNotificationSeenLocally(notificationId);
+      void markNotificationRead(notificationId).catch((markError) => {
+        setError(markError instanceof Error ? markError.message : "Failed to update notification.");
+      });
+    }, AUTO_MARK_READ_MS);
+    autoReadTimersRef.current.push(timer);
+  }
+
+  function scheduleAutoMarkAllRead() {
+    const timer = window.setTimeout(() => {
+      void markAllNotificationsRead()
+        .then((response) => {
+          setNotifications(response.items);
+          setUnreadCount(response.unreadCount);
+        })
+        .catch((markError) => {
+          setError(markError instanceof Error ? markError.message : "Failed to update notifications.");
+        });
+    }, AUTO_MARK_READ_MS);
+    autoReadTimersRef.current.push(timer);
+  }
+
+  useEffect(() => {
+    return () => {
+      freshTimersRef.current.forEach(window.clearTimeout);
+      autoReadTimersRef.current.forEach(window.clearTimeout);
+      freshTimersRef.current = [];
+      autoReadTimersRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     if (isAuthLoading || authError) {
@@ -77,6 +132,12 @@ export function NotificationsPage() {
         if (!cancelled) {
           setNotifications(response.items);
           setUnreadCount(response.unreadCount);
+
+          const unreadNotifications = response.items.filter((notification) => !notification.read);
+          unreadNotifications.forEach((notification) => showTemporaryNotificationState(notification.id));
+          if (unreadNotifications.length > 0) {
+            scheduleAutoMarkAllRead();
+          }
         }
       })
       .catch((loadError) => {
@@ -118,14 +179,8 @@ export function NotificationsPage() {
             notification,
             ...current.filter((item) => item.id !== notification.id),
           ]);
-          setFreshNotificationIds((current) =>
-            current.includes(notification.id) ? current : [...current, notification.id],
-          );
-
-          const timer = window.setTimeout(() => {
-            setFreshNotificationIds((current) => current.filter((id) => id !== notification.id));
-          }, 6000);
-          freshTimersRef.current.push(timer);
+          showTemporaryNotificationState(notification.id);
+          scheduleAutoMarkRead(notification.id);
         } catch {
           setError("Received an unreadable notification update.");
         }
@@ -137,7 +192,9 @@ export function NotificationsPage() {
     return () => {
       socket?.close();
       freshTimersRef.current.forEach(window.clearTimeout);
+      autoReadTimersRef.current.forEach(window.clearTimeout);
       freshTimersRef.current = [];
+      autoReadTimersRef.current = [];
     };
   }, [authError, isAuthLoading, session?.user.id]);
 
