@@ -10,10 +10,91 @@ import type { ChatMessage, ChatSocketEvent, Message, MessageThreadDetail } from 
 
 type SocketStatus = "idle" | "connecting" | "connected" | "fallback";
 
+function DMSkeletonBlock({ className }: { className: string }) {
+  return <div className={`animate-pulse rounded-full bg-gray-100 ${className}`} />;
+}
+
+function DMPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
+        <div className="px-4 pt-12 pb-4">
+          <div className="mb-3 flex items-center justify-between">
+            <DMSkeletonBlock className="h-8 w-32" />
+            <DMSkeletonBlock className="h-9 w-9 rounded-xl" />
+          </div>
+          <DMSkeletonBlock className="h-10 w-full rounded-2xl" />
+        </div>
+      </div>
+      <DMThreadListSkeleton />
+    </div>
+  );
+}
+
+function DMThreadListSkeleton() {
+  return (
+    <>
+      <div className="border-b border-gray-100 bg-white px-4 py-3">
+        <DMSkeletonBlock className="mb-3 h-3 w-20" />
+        <div className="flex gap-3 overflow-hidden">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex flex-shrink-0 flex-col items-center gap-2">
+              <DMSkeletonBlock className="h-12 w-12" />
+              <DMSkeletonBlock className="h-2.5 w-12" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="space-y-1 px-4 py-3">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} className="flex items-center gap-3 rounded-2xl p-3">
+            <DMSkeletonBlock className="h-12 w-12 flex-shrink-0" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <DMSkeletonBlock className="h-4 w-32" />
+                <DMSkeletonBlock className="h-3 w-12" />
+              </div>
+              <DMSkeletonBlock className="h-3 w-48 max-w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function DMConversationSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <DMSkeletonBlock className="h-7 w-7 self-end" />
+        <div className="space-y-1">
+          <DMSkeletonBlock className="h-10 w-52 rounded-2xl" />
+          <DMSkeletonBlock className="h-2.5 w-14" />
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <div className="space-y-1">
+          <DMSkeletonBlock className="h-10 w-44 rounded-2xl" />
+          <DMSkeletonBlock className="ml-auto h-2.5 w-14" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <DMSkeletonBlock className="h-7 w-7 self-end" />
+        <div className="space-y-1">
+          <DMSkeletonBlock className="h-10 w-60 rounded-2xl" />
+          <DMSkeletonBlock className="h-2.5 w-14" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function DMPage() {
   const router = useRouter();
   const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
   const [threads, setThreads] = useState<Message[]>([]);
+  const [isThreadsLoading, setIsThreadsLoading] = useState(true);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeThread, setActiveThread] = useState<MessageThreadDetail | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,11 +132,17 @@ export function DMPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthLoading || authError) {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (authError) {
+      setIsThreadsLoading(false);
       return;
     }
 
     let cancelled = false;
+    setIsThreadsLoading(true);
     void fetchMessageThreads()
       .then((items) => {
         if (!cancelled) {
@@ -65,6 +152,11 @@ export function DMPage() {
       .catch((messageError) => {
         if (!cancelled) {
           setError(messageError instanceof Error ? messageError.message : "Failed to load messages.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsThreadsLoading(false);
         }
       });
 
@@ -208,7 +300,7 @@ export function DMPage() {
   };
 
   if (isAuthLoading) {
-    return <div className="px-4 pt-16 text-sm text-gray-500">Loading messages...</div>;
+    return <DMPageSkeleton />;
   }
 
   if (!session) {
@@ -268,7 +360,7 @@ export function DMPage() {
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {isThreadLoading ? (
-            <p className="text-sm text-gray-500">Loading conversation...</p>
+            <DMConversationSkeleton />
           ) : (
             <div className="space-y-3">
               {activeThread?.messages.map((message) => (
@@ -365,73 +457,79 @@ export function DMPage() {
         </div>
       </div>
 
-      <div className="border-b border-gray-100 bg-white px-4 py-3">
-        <p className="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Quick Chat</p>
-        <div className="no-scrollbar flex gap-3 overflow-x-auto">
-          {threads.slice(0, 4).map((thread) => (
-            <button
-              key={thread.id}
-              onClick={() => openThread(thread)}
-              className="flex flex-shrink-0 flex-col items-center gap-1"
-            >
-              <div className="relative">
-                <Image
-                  src={thread.user.avatar}
-                  alt={thread.user.displayName}
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 rounded-full object-cover"
-                />
-                <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
-              </div>
-              <span className="max-w-[48px] truncate text-[10px] text-gray-500">{thread.user.username}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-1 px-4 py-3">
-        {filteredThreads.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="text-4xl">💬</span>
-            <p className="mt-3 text-sm text-gray-500">No conversations yet</p>
+      {isThreadsLoading ? (
+        <DMThreadListSkeleton />
+      ) : (
+        <>
+          <div className="border-b border-gray-100 bg-white px-4 py-3">
+            <p className="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Quick Chat</p>
+            <div className="no-scrollbar flex gap-3 overflow-x-auto">
+              {threads.slice(0, 4).map((thread) => (
+                <button
+                  key={thread.id}
+                  onClick={() => openThread(thread)}
+                  className="flex flex-shrink-0 flex-col items-center gap-1"
+                >
+                  <div className="relative">
+                    <Image
+                      src={thread.user.avatar}
+                      alt={thread.user.displayName}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                    <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
+                  </div>
+                  <span className="max-w-[48px] truncate text-[10px] text-gray-500">{thread.user.username}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        ) : (
-          filteredThreads.map((thread) => (
-            <button
-              key={thread.id}
-              onClick={() => openThread(thread)}
-              className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all hover:bg-white"
-            >
-              <div className="relative flex-shrink-0">
-                <Image
-                  src={thread.user.avatar}
-                  alt={thread.user.displayName}
-                  width={48}
-                  height={48}
-                  className="h-12 w-12 rounded-full object-cover"
-                />
-                {thread.unread > 0 ? (
-                  <span className="absolute top-[-4px] right-[-4px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-50 bg-violet-500 text-[9px] font-bold text-white">
-                    {thread.unread}
-                  </span>
-                ) : null}
+
+          <div className="space-y-1 px-4 py-3">
+            {filteredThreads.length === 0 ? (
+              <div className="py-16 text-center">
+                <span className="text-4xl">💬</span>
+                <p className="mt-3 text-sm text-gray-500">No conversations yet</p>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className={`text-sm ${thread.unread > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-700"}`}>
-                    {thread.user.displayName}
-                  </span>
-                  <span className="text-[10px] text-gray-400">{thread.timestamp}</span>
-                </div>
-                <p className={`mt-0.5 truncate text-xs ${thread.unread > 0 ? "font-medium text-gray-700" : "text-gray-400"}`}>
-                  {thread.lastMessage}
-                </p>
-              </div>
-            </button>
-          ))
-        )}
-      </div>
+            ) : (
+              filteredThreads.map((thread) => (
+                <button
+                  key={thread.id}
+                  onClick={() => openThread(thread)}
+                  className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all hover:bg-white"
+                >
+                  <div className="relative flex-shrink-0">
+                    <Image
+                      src={thread.user.avatar}
+                      alt={thread.user.displayName}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-full object-cover"
+                    />
+                    {thread.unread > 0 ? (
+                      <span className="absolute top-[-4px] right-[-4px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-50 bg-violet-500 text-[9px] font-bold text-white">
+                        {thread.unread}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm ${thread.unread > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-700"}`}>
+                        {thread.user.displayName}
+                      </span>
+                      <span className="text-[10px] text-gray-400">{thread.timestamp}</span>
+                    </div>
+                    <p className={`mt-0.5 truncate text-xs ${thread.unread > 0 ? "font-medium text-gray-700" : "text-gray-400"}`}>
+                      {thread.lastMessage}
+                    </p>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
