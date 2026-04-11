@@ -74,6 +74,7 @@ export interface MessageThreadDetail {
 
 export interface TrendingTopic {
   id: string;
+  postId?: string;
   title: string;
   category: string;
   coverImage: string;
