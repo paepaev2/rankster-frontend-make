@@ -31,6 +31,17 @@ export function getApiBaseUrl() {
   return normalizeBaseUrl(process.env.NEXT_PUBLIC_RANKSTER_API_URL ?? DEFAULT_API_BASE_URL);
 }
 
+function getWebSocketBaseUrl() {
+  const apiBaseUrl = getApiBaseUrl();
+  if (apiBaseUrl.startsWith("https://")) {
+    return `wss://${apiBaseUrl.slice("https://".length)}`;
+  }
+  if (apiBaseUrl.startsWith("http://")) {
+    return `ws://${apiBaseUrl.slice("http://".length)}`;
+  }
+  return apiBaseUrl;
+}
+
 export function getStoredAccessToken() {
   if (typeof window === "undefined") {
     return null;
@@ -202,6 +213,16 @@ export async function sendMessage(threadId: string, text: string) {
     method: "POST",
     body: JSON.stringify({ text }),
   });
+}
+
+export function getMessageThreadSocketUrl(threadId: string) {
+  const token = getStoredAccessToken();
+  if (!token) {
+    throw new Error("You need to sign in to open realtime messages.");
+  }
+
+  const params = new URLSearchParams({ token });
+  return `${getWebSocketBaseUrl()}/messages/threads/${encodeURIComponent(threadId)}/ws?${params.toString()}`;
 }
 
 export async function fetchLeaderboard() {

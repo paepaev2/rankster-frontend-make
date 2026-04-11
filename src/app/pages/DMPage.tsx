@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Image as ImageIcon, Search, Send, Smile } from "lucide-react";
-import { fetchMessageThread, fetchMessageThreads, sendMessage } from "../lib/ranksterApi";
+import { fetchMessageThread, fetchMessageThreads, getMessageThreadSocketUrl, sendMessage } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
-import type { Message, MessageThreadDetail } from "../lib/feedUi";
+import type { ChatMessage, ChatSocketEvent, Message, MessageThreadDetail } from "../lib/feedUi";
+
+type SocketStatus = "idle" | "connecting" | "connected" | "fallback";
 
 export function DMPage() {
   const router = useRouter();
@@ -17,7 +19,36 @@ export function DMPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [newMessage, setNewMessage] = useState("");
   const [isThreadLoading, setIsThreadLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [socketStatus, setSocketStatus] = useState<SocketStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  const appendMessage = useCallback((threadId: string, message: ChatMessage) => {
+    setActiveThread((current) => {
+      if (!current || current.id !== threadId || current.messages.some((entry) => entry.id === message.id)) {
+        return current;
+      }
+      return {
+        ...current,
+        messages: [...current.messages, message],
+      };
+    });
+    setThreads((currentThreads) => {
+      const currentThread = currentThreads.find((thread) => thread.id === threadId);
+      if (!currentThread) {
+        return currentThreads;
+      }
+      const updated: Message = {
+        ...currentThread,
+        lastMessage: message.text,
+        timestamp: message.timestamp,
+        unread: 0,
+      };
+      return [updated, ...currentThreads.filter((thread) => thread.id !== threadId)];
+    });
+  }, []);
 
   useEffect(() => {
     if (isAuthLoading || authError) {
@@ -45,6 +76,7 @@ export function DMPage() {
   useEffect(() => {
     if (!activeThreadId) {
       setActiveThread(null);
+      setSocketStatus("idle");
       return;
     }
 
@@ -73,6 +105,65 @@ export function DMPage() {
     };
   }, [activeThreadId]);
 
+  useEffect(() => {
+    if (!activeThreadId || isThreadLoading) {
+      return;
+    }
+
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(getMessageThreadSocketUrl(activeThreadId));
+    } catch (socketError) {
+      setSocketStatus("fallback");
+      setError(socketError instanceof Error ? socketError.message : "Realtime chat is unavailable.");
+      return;
+    }
+
+    socketRef.current = socket;
+    setSocketStatus("connecting");
+
+    socket.onopen = () => {
+      setSocketStatus("connected");
+      setError(null);
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data as string) as ChatSocketEvent;
+        if (payload.type === "message" && payload.message) {
+          appendMessage(payload.threadId, payload.message);
+          setIsSending(false);
+        }
+        if (payload.type === "error" && payload.error) {
+          setError(payload.error);
+          setIsSending(false);
+        }
+      } catch {
+        setError("Received an unreadable chat update.");
+      }
+    };
+
+    socket.onerror = () => {
+      setSocketStatus("fallback");
+    };
+
+    socket.onclose = () => {
+      setSocketStatus((current) => (current === "connected" || current === "connecting" ? "fallback" : current));
+      setIsSending(false);
+    };
+
+    return () => {
+      socket.close();
+      if (socketRef.current === socket) {
+        socketRef.current = null;
+      }
+    };
+  }, [activeThreadId, appendMessage, isThreadLoading]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [activeThread?.messages.length]);
+
   const filteredThreads = threads.filter((thread) => {
     const normalized = searchQuery.trim().toLowerCase();
     if (!normalized) {
@@ -94,33 +185,25 @@ export function DMPage() {
       return;
     }
 
+    const text = newMessage.trim();
+    setNewMessage("");
+    setError(null);
+    setIsSending(true);
+
+    const socket = socketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: "message", text }));
+      return;
+    }
+
     try {
-      const created = await sendMessage(activeThreadId, newMessage.trim());
-      setActiveThread((current) => {
-        if (!current || current.id !== activeThreadId) {
-          return current;
-        }
-        return {
-          ...current,
-          messages: [...current.messages, created],
-        };
-      });
-      setThreads((currentThreads) => {
-        const currentThread = currentThreads.find((thread) => thread.id === activeThreadId);
-        if (!currentThread) {
-          return currentThreads;
-        }
-        const updated: Message = {
-          ...currentThread,
-          lastMessage: created.text,
-          timestamp: created.timestamp,
-          unread: 0,
-        };
-        return [updated, ...currentThreads.filter((thread) => thread.id !== activeThreadId)];
-      });
-      setNewMessage("");
+      const created = await sendMessage(activeThreadId, text);
+      appendMessage(activeThreadId, created);
     } catch (sendError) {
       setError(sendError instanceof Error ? sendError.message : "Failed to send message.");
+      setNewMessage(text);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -168,6 +251,19 @@ export function DMPage() {
               </div>
             </>
           ) : null}
+          <div className="ml-auto">
+            <span
+              className={`rounded-full px-2 py-1 text-[10px] font-bold ${
+                socketStatus === "connected"
+                  ? "bg-green-50 text-green-600"
+                  : socketStatus === "connecting"
+                    ? "bg-yellow-50 text-yellow-600"
+                    : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              {socketStatus === "connected" ? "Live" : socketStatus === "connecting" ? "Connecting" : "Realtime fallback"}
+            </span>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 pb-28">
@@ -202,6 +298,7 @@ export function DMPage() {
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
@@ -231,7 +328,7 @@ export function DMPage() {
             </div>
             <button
               onClick={() => void handleSendMessage()}
-              disabled={!newMessage.trim()}
+              disabled={!newMessage.trim() || isSending}
               className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white transition-all hover:bg-violet-700 disabled:opacity-40"
               aria-label="Send message"
             >
