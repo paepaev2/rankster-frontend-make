@@ -9,6 +9,7 @@ import type {
   MessageThreadDetail,
   NotificationSocketEvent,
   NotificationsResponse,
+  Comment,
   ProfileResponse,
   RanksterNotification,
   RankPost,
@@ -185,6 +186,13 @@ export async function fetchMainFeed(scope: FeedScope = "for-you", cursor?: strin
   }
 
   return apiFetch<FeedResponse>(`/feed/main?${params.toString()}`);
+}
+
+export async function createComment(postId: string, text: string) {
+  return apiFetch<Comment>(`/feed/post/${encodeURIComponent(postId)}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
 }
 
 export async function fetchTrendingTopics() {

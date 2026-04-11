@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronDown, ChevronUp, Loader2, Download, Check } from "lucide-react";
-import type { RankPost, TierData } from "../lib/feedUi";
+import type { Comment as RankPostComment, RankPost, TierData } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
+import { createComment } from "../lib/ranksterApi";
 
 interface RankPostCardProps {
   post: RankPost;
@@ -331,11 +333,19 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
   const saved = savedIds.has(post.id);
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<RankPostComment[]>(post.comments);
+  const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [igState, setIgState] = useState<ShareState>("idle");
   const [igToast, setIgToast] = useState<string | null>(null);
 
   const category = CATEGORIES.find((c) => c.id === post.category);
+
+  useEffect(() => {
+    setComments(post.comments);
+  }, [post.comments, post.id]);
 
   const handleLike = () => {
     setLiked(!liked);
@@ -408,6 +418,26 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
       await navigator.clipboard.writeText(`${window.location.origin}/topic/${post.id}`);
     } catch {
       // ignore
+    }
+  };
+
+  const handleSubmitComment = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const text = commentText.trim();
+    if (!text || isCommentSubmitting) {
+      return;
+    }
+
+    setIsCommentSubmitting(true);
+    setCommentError(null);
+    try {
+      const createdComment = await createComment(post.id, text);
+      setComments((currentComments) => [createdComment, ...currentComments]);
+      setCommentText("");
+    } catch (error) {
+      setCommentError(error instanceof Error ? error.message : "Could not add your comment.");
+    } finally {
+      setIsCommentSubmitting(false);
     }
   };
 
@@ -571,7 +601,7 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
             className="flex items-center gap-1.5 text-gray-400 hover:text-violet-500 transition-colors"
           >
             <MessageCircle size={19} />
-            <span className="text-xs font-semibold">{formatCount(post.comments.length)}</span>
+            <span className="text-xs font-semibold">{formatCount(comments.length)}</span>
           </button>
 
           {/* Share dropdown */}
@@ -645,39 +675,61 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
       </div>
 
       {/* Comments */}
-      {showComments && post.comments.length > 0 && (
+      {showComments && (
         <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
-          {post.comments.map((comment) => (
-            <div key={comment.id} className="flex gap-2.5">
-              <Image
-                src={comment.user.avatar}
-                alt={comment.user.displayName}
-                width={28}
-                height={28}
-                className="h-7 w-7 rounded-full object-cover flex-shrink-0"
-              />
-              <div className="bg-gray-50 rounded-xl px-3 py-2 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-gray-800">{comment.user.username}</span>
-                  <button className="flex items-center gap-0.5 text-gray-400 hover:text-red-400 text-xs">
-                    <Heart size={10} />
-                    <span>{comment.likes}</span>
-                  </button>
+          {comments.length > 0 ? (
+            comments.map((comment) => (
+              <div key={comment.id} className="flex gap-2.5">
+                <Image
+                  src={comment.user.avatar}
+                  alt={comment.user.displayName}
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-full object-cover flex-shrink-0"
+                />
+                <div className="bg-gray-50 rounded-xl px-3 py-2 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-800">{comment.user.username}</span>
+                    <button className="flex items-center gap-0.5 text-gray-400 hover:text-red-400 text-xs">
+                      <Heart size={10} />
+                      <span>{comment.likes}</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-0.5">{comment.text}</p>
                 </div>
-                <p className="text-xs text-gray-600 mt-0.5">{comment.text}</p>
               </div>
+            ))
+          ) : (
+            <div className="rounded-xl bg-gray-50 px-3 py-3 text-center text-xs text-gray-400">
+              Be the first to comment on this ranking.
             </div>
-          ))}
-          <div className="flex gap-2.5">
+          )}
+
+          {commentError ? (
+            <div className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">
+              {commentError}
+            </div>
+          ) : null}
+
+          <form onSubmit={handleSubmitComment} className="flex gap-2.5">
             <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
               <span className="text-violet-600 text-xs font-bold">A</span>
             </div>
             <input
               type="text"
               placeholder="Add a comment..."
+              value={commentText}
+              onChange={(event) => setCommentText(event.target.value)}
               className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-700 border border-gray-100 focus:outline-none focus:border-violet-300 focus:ring-1 focus:ring-violet-100"
             />
-          </div>
+            <button
+              type="submit"
+              disabled={isCommentSubmitting || commentText.trim() === ""}
+              className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+            >
+              {isCommentSubmitting ? "Posting..." : "Post"}
+            </button>
+          </form>
         </div>
       )}
     </div>
