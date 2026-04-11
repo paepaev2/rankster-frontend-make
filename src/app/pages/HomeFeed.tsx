@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
 import { AppErrorState, FeedSkeleton } from "../components/AppStateViews";
-import { type FeedScope, fetchMainFeed } from "../lib/ranksterApi";
+import { type FeedScope, fetchMainFeed, fetchNotifications } from "../lib/ranksterApi";
 import type { RankPost } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
 
@@ -23,6 +23,7 @@ export function HomeFeed() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
   const currentUser = session?.user;
 
@@ -31,6 +32,30 @@ export function HomeFeed() {
       void loadFeed(activeTab);
     }
   }, [activeTab, isAuthLoading, authError]);
+
+  useEffect(() => {
+    if (!currentUser || authError) {
+      setUnreadNotifications(0);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchNotifications()
+      .then((response) => {
+        if (!cancelled) {
+          setUnreadNotifications(response.unreadCount);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setUnreadNotifications(0);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authError, currentUser?.id]);
 
   function navigate(path: string) {
     router.push(path);
@@ -78,9 +103,17 @@ export function HomeFeed() {
               >
                 <Flame size={20} />
               </button>
-              <button className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-500 transition-colors">
+              <button
+                onClick={() => navigate("/notifications")}
+                className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-500 transition-colors"
+                aria-label="Open notifications"
+              >
                 <Bell size={20} />
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                {unreadNotifications > 0 ? (
+                  <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[9px] font-bold text-white">
+                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                  </span>
+                ) : null}
               </button>
               <button
                 onClick={() => navigate("/profile")}
