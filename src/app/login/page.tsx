@@ -4,8 +4,13 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
-import { loginWithGoogleCredential } from "@/app/lib/ranksterApi";
+import { isMockAuthEnabled, loginWithGoogleCredential, loginWithMockUser } from "@/app/lib/ranksterApi";
 import { useSession } from "@/app/lib/useMockSession";
+
+const DEV_MOCK_USERS = [
+  { username: "me", label: "Alex Rivera" },
+  { username: "rankmaster99", label: "Jordan Miles" },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,12 +21,13 @@ export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const { session, isLoading: isSessionLoading } = useSession();
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const mockAuthEnabled = isMockAuthEnabled();
 
   useEffect(() => {
-    if (!isSessionLoading && session) {
+    if (!mockAuthEnabled && !isSessionLoading && session) {
       router.replace("/");
     }
-  }, [isSessionLoading, router, session]);
+  }, [isSessionLoading, mockAuthEnabled, router, session]);
 
   const handleLogin = () => {
     setError("Email login is not enabled yet. Use Google to continue.");
@@ -40,6 +46,19 @@ export default function LoginPage() {
       router.replace("/");
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Failed to sign in with Google.");
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleMockLogin = async (username: string) => {
+    try {
+      setIsSigningIn(true);
+      setError("");
+      await loginWithMockUser(username);
+      router.replace("/dm");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Failed to sign in with mock user.");
     } finally {
       setIsSigningIn(false);
     }
@@ -65,6 +84,32 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-3">
+          {mockAuthEnabled ? (
+            <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Dev chat testing</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Pick one mock user here, then use an incognito/private window for the other user.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {DEV_MOCK_USERS.map((user) => (
+                  <button
+                    key={user.username}
+                    type="button"
+                    onClick={() => void handleMockLogin(user.username)}
+                    className={`rounded-xl border px-3 py-2 text-left transition-all ${
+                      session?.user.username === user.username
+                        ? "border-violet-300 bg-violet-50 text-violet-700"
+                        : "border-gray-100 bg-gray-50 text-gray-700 hover:border-violet-200"
+                    }`}
+                  >
+                    <span className="block text-sm font-bold">{user.label}</span>
+                    <span className="text-xs text-gray-400">@{user.username}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {googleClientId ? (
             <div className="flex justify-center rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
               <GoogleLogin
