@@ -6,7 +6,9 @@ import type {
   LeaderboardEntry,
   Message,
   MessageThreadDetail,
+  NotificationsResponse,
   ProfileResponse,
+  RanksterNotification,
   RankPost,
   SearchOverviewResponse,
   TrendingTopic,
@@ -230,6 +232,22 @@ export function getMessageThreadSocketUrl(threadId: string) {
 
   const params = new URLSearchParams({ token });
   return `${getWebSocketBaseUrl()}/messages/threads/${encodeURIComponent(threadId)}/ws?${params.toString()}`;
+}
+
+export async function fetchNotifications() {
+  return apiFetch<NotificationsResponse>("/notifications");
+}
+
+export async function markNotificationRead(notificationId: string) {
+  return apiFetch<RanksterNotification>(`/notifications/${encodeURIComponent(notificationId)}/read`, {
+    method: "POST",
+  });
+}
+
+export async function markAllNotificationsRead() {
+  return apiFetch<NotificationsResponse>("/notifications/read-all", {
+    method: "POST",
+  });
 }
 
 export async function fetchLeaderboard() {
