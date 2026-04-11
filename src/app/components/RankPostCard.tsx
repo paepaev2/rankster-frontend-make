@@ -8,7 +8,7 @@ import type { Comment as RankPostComment, RankPost, TierData } from "../lib/feed
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
-import { createComment } from "../lib/ranksterApi";
+import { createComment, likeComment, unlikeComment } from "../lib/ranksterApi";
 
 interface RankPostCardProps {
   post: RankPost;
@@ -337,6 +337,7 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
   const [commentText, setCommentText] = useState("");
   const [commentError, setCommentError] = useState<string | null>(null);
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [pendingCommentLikeIds, setPendingCommentLikeIds] = useState<Set<string>>(() => new Set());
   const [shareOpen, setShareOpen] = useState(false);
   const [igState, setIgState] = useState<ShareState>("idle");
   const [igToast, setIgToast] = useState<string | null>(null);
@@ -418,6 +419,33 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
       await navigator.clipboard.writeText(`${window.location.origin}/topic/${post.id}`);
     } catch {
       // ignore
+    }
+  };
+
+  const handleCommentLike = async (comment: RankPostComment) => {
+    if (pendingCommentLikeIds.has(comment.id)) {
+      return;
+    }
+
+    setPendingCommentLikeIds((currentIds) => new Set(currentIds).add(comment.id));
+    setCommentError(null);
+    try {
+      const updatedComment = comment.isLiked ? await unlikeComment(comment.id) : await likeComment(comment.id);
+      setComments((currentComments) =>
+        currentComments.map((currentComment) =>
+          currentComment.id === comment.id
+            ? { ...currentComment, likes: updatedComment.likes, isLiked: updatedComment.isLiked }
+            : currentComment,
+        ),
+      );
+    } catch (error) {
+      setCommentError(error instanceof Error ? error.message : "Could not update the comment like.");
+    } finally {
+      setPendingCommentLikeIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(comment.id);
+        return nextIds;
+      });
     }
   };
 
@@ -690,8 +718,16 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
                 <div className="bg-gray-50 rounded-xl px-3 py-2 flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-gray-800">{comment.user.username}</span>
-                    <button className="flex items-center gap-0.5 text-gray-400 hover:text-red-400 text-xs">
-                      <Heart size={10} />
+                    <button
+                      type="button"
+                      onClick={() => handleCommentLike(comment)}
+                      disabled={pendingCommentLikeIds.has(comment.id)}
+                      className={`flex items-center gap-0.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                        comment.isLiked ? "text-red-500" : "text-gray-400 hover:text-red-400"
+                      }`}
+                      aria-label={comment.isLiked ? "Unlike comment" : "Like comment"}
+                    >
+                      <Heart size={10} className={comment.isLiked ? "fill-red-500" : ""} />
                       <span>{comment.likes}</span>
                     </button>
                   </div>

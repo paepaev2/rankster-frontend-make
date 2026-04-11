@@ -30,6 +30,7 @@ export interface Comment {
   text: string;
   createdAt: string;
   likes: number;
+  isLiked: boolean;
 }
 
 export interface RankPost {

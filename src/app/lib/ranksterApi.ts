@@ -195,6 +195,18 @@ export async function createComment(postId: string, text: string) {
   });
 }
 
+export async function likeComment(commentId: string) {
+  return apiFetch<Pick<Comment, "likes" | "isLiked">>(`/feed/comments/${encodeURIComponent(commentId)}/like`, {
+    method: "POST",
+  });
+}
+
+export async function unlikeComment(commentId: string) {
+  return apiFetch<Pick<Comment, "likes" | "isLiked">>(`/feed/comments/${encodeURIComponent(commentId)}/like`, {
+    method: "DELETE",
+  });
+}
+
 export async function fetchTrendingTopics() {
   const response = await apiFetch<{ items: TrendingTopic[] }>("/search/trending", {}, false);
   return response.items;
