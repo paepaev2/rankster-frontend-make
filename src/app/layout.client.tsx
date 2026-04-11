@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Layout } from '@/app/components/Layout';
 
 export function RootLayoutClient({
@@ -8,9 +9,20 @@ export function RootLayoutClient({
 }: {
   children: React.ReactNode;
 }) {
-  return (
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const content = (
     <Layout>
       {children}
     </Layout>
+  );
+
+  if (!googleClientId) {
+    return content;
+  }
+
+  return (
+    <GoogleOAuthProvider clientId={googleClientId}>
+      {content}
+    </GoogleOAuthProvider>
   );
 }

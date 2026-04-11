@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
+import { loginWithGoogleCredential } from "@/app/lib/ranksterApi";
+import { useSession } from "@/app/lib/useMockSession";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -13,6 +16,16 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [googleError, setGoogleError] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const { session, isLoading: isSessionLoading } = useSession();
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  useEffect(() => {
+    if (!isSessionLoading && session) {
+      router.replace("/");
+    }
+  }, [isSessionLoading, router, session]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -29,8 +42,25 @@ export default function RegisterPage() {
   const handleRegister = () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
-    // Auth logic goes here
-    router.push("/");
+    setGoogleError("Email registration is not enabled yet. Use Google to create your account.");
+  };
+
+  const handleGoogleSuccess = async (response: CredentialResponse) => {
+    if (!response.credential) {
+      setGoogleError("Google sign-up did not return a credential.");
+      return;
+    }
+
+    try {
+      setIsSigningIn(true);
+      setGoogleError("");
+      await loginWithGoogleCredential(response.credential);
+      router.replace("/");
+    } catch (loginError) {
+      setGoogleError(loginError instanceof Error ? loginError.message : "Failed to continue with Google.");
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   const field = (
@@ -50,6 +80,7 @@ export default function RegisterPage() {
           value={value}
           onChange={(e) => { onChange(e.target.value); setErrors((prev) => ({ ...prev, [id]: "" })); }}
           placeholder={placeholder}
+          autoComplete={id === "email" ? "email" : id === "username" ? "username" : id === "displayName" ? "name" : undefined}
           className={`w-full bg-white rounded-xl px-4 py-3 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all ${errors[id] ? "border-red-300" : "border-gray-200"}`}
         />
         {extra}
@@ -61,7 +92,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <div className="px-4 pt-14 pb-4 flex items-center gap-3">
-        <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+        <button type="button" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
           <ArrowLeft size={22} />
         </button>
       </div>
@@ -76,7 +107,42 @@ export default function RegisterPage() {
           <p className="text-gray-400 text-sm mt-1">Start ranking everything</p>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-3 mb-6">
+          {googleClientId ? (
+            <div className="flex justify-center rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm">
+              <GoogleLogin
+                onSuccess={(response) => void handleGoogleSuccess(response)}
+                onError={() => setGoogleError("Google sign-up was cancelled or failed.")}
+                text="signup_with"
+                shape="pill"
+                theme="outline"
+                width="320"
+              />
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              Add <code className="font-mono text-xs">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> to enable Google sign-up.
+            </div>
+          )}
+          <p className="text-center text-xs font-medium text-gray-400">
+            Google is the active account creation method right now.
+          </p>
+        </div>
+
+        <div className="relative mb-6">
+          <div className="h-px bg-gray-200" />
+          <span className="absolute inset-x-0 -top-2 mx-auto w-fit bg-gray-50 px-3 text-xs font-bold uppercase tracking-[0.2em] text-gray-300">
+            Or
+          </span>
+        </div>
+
+        <form
+          className="space-y-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleRegister();
+          }}
+        >
           {field("displayName", "Display Name", displayName, setDisplayName, "Your name")}
           {field("username", "Username", username, (v) => setUsername(v.toLowerCase().replace(/\s/g, "_")), "e.g. tierqueen")}
           {field("email", "Email", email, setEmail, "you@example.com", "email")}
@@ -89,9 +155,11 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setErrors((prev) => ({ ...prev, password: "" })); }}
                 placeholder="Min. 6 characters"
+                autoComplete="new-password"
                 className={`w-full bg-white rounded-xl px-4 py-3 pr-12 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all ${errors.password ? "border-red-300" : "border-gray-200"}`}
               />
               <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
@@ -109,22 +177,26 @@ export default function RegisterPage() {
               onChange={(e) => { setConfirmPassword(e.target.value); setErrors((prev) => ({ ...prev, confirmPassword: "" })); }}
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
               placeholder="••••••••"
+              autoComplete="new-password"
               className={`w-full mt-2 bg-white rounded-xl px-4 py-3 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all ${errors.confirmPassword ? "border-red-300" : "border-gray-200"}`}
             />
             {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>}
           </div>
-        </div>
+          {googleError && <p className="mt-3 text-xs text-red-500">{googleError}</p>}
+          {isSigningIn && <p className="mt-3 text-xs text-violet-600">Setting up your Google account...</p>}
 
-        <button
-          onClick={handleRegister}
-          className="w-full mt-6 bg-violet-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg"
-        >
-          Create Account
-        </button>
+          <button
+            type="submit"
+            className="w-full mt-6 bg-violet-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg"
+          >
+            Continue with Email
+          </button>
+        </form>
 
         <p className="text-center text-sm text-gray-400 mt-6">
           Already have an account?{" "}
           <button
+            type="button"
             onClick={() => router.push("/login")}
             className="text-violet-600 font-bold hover:text-violet-700"
           >

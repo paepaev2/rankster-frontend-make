@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import type { AuthSession } from "./feedUi";
-import { ensureMockSession } from "./ranksterApi";
+import { resolveSession } from "./ranksterApi";
 
-export function useMockSession() {
+export function useSession() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -14,13 +14,13 @@ export function useMockSession() {
 
     async function loadSession() {
       try {
-        const resolved = await ensureMockSession();
+        const resolved = await resolveSession();
         if (!cancelled) {
           setSession(resolved);
         }
       } catch (sessionError) {
         if (!cancelled) {
-          setError(sessionError instanceof Error ? sessionError.message : "Failed to create mock session.");
+          setError(sessionError instanceof Error ? sessionError.message : "Failed to load session.");
         }
       } finally {
         if (!cancelled) {
@@ -42,3 +42,5 @@ export function useMockSession() {
     error,
   };
 }
+
+export const useMockSession = useSession;
