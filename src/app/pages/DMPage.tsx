@@ -231,7 +231,7 @@ export function DMPage() {
     const activeChatUser = activeThread?.user ?? threads.find((thread) => thread.id === activeThreadId)?.user;
 
     return (
-      <div className="flex h-screen flex-col bg-white">
+      <div className="flex h-[calc(100vh-5rem)] flex-col bg-white">
         <div className="flex items-center gap-3 border-b border-gray-100 bg-white/95 px-4 pt-12 pb-4 backdrop-blur-md">
           <button onClick={() => setActiveThreadId(null)} className="text-gray-500 transition-colors hover:text-gray-700" aria-label="Back to messages">
             <ArrowLeft size={22} />
@@ -266,7 +266,7 @@ export function DMPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-4 pb-28">
+        <div className="flex-1 overflow-y-auto px-4 py-4">
           {isThreadLoading ? (
             <p className="text-sm text-gray-500">Loading conversation...</p>
           ) : (
@@ -303,8 +303,9 @@ export function DMPage() {
           )}
         </div>
 
-        <div className="fixed right-0 bottom-0 left-0 mx-auto max-w-lg border-t border-gray-100 bg-white px-4 py-3 pb-6">
+        <div className="flex-shrink-0 border-t border-gray-100 bg-white px-4 py-3">
           {error ? <p className="mb-2 text-sm text-red-500">{error}</p> : null}
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Chatbox</p>
           <div className="flex items-center gap-2">
             <button className="text-gray-400 transition-colors hover:text-violet-500" aria-label="Attach image">
               <ImageIcon size={20} />
