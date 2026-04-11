@@ -80,15 +80,29 @@ export interface ChatSocketEvent {
   timestamp: string;
 }
 
+export interface MessageInboxSocketEvent {
+  type: "ready" | "message";
+  thread?: Message;
+  unreadCount: number;
+  timestamp: string;
+}
+
 export interface RanksterNotification {
   id: string;
-  type: "comment" | "follow" | "message" | "rank" | string;
+  type: "comment" | "follow" | "rank" | string;
   title: string;
   body: string;
   actor?: User;
   href: string;
   createdAt: string;
   read: boolean;
+}
+
+export interface NotificationSocketEvent {
+  type: "ready" | "notification";
+  notification?: RanksterNotification;
+  unreadCount: number;
+  timestamp: string;
 }
 
 export interface NotificationsResponse {

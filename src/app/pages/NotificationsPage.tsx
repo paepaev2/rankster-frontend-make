@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Bell, CheckCheck, MessageCircle, Trophy, UserPlus } from "lucide-react";
+import { ArrowLeft, Bell, CheckCheck, Trophy, UserPlus } from "lucide-react";
 import { AppErrorState } from "../components/AppStateViews";
-import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../lib/ranksterApi";
+import {
+  fetchNotifications,
+  getNotificationsSocketUrl,
+  markAllNotificationsRead,
+  markNotificationRead,
+  parseNotificationSocketEvent,
+} from "../lib/ranksterApi";
 import type { RanksterNotification } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
 
@@ -30,9 +36,6 @@ function notificationIcon(type: RanksterNotification["type"]) {
   if (type === "follow") {
     return <UserPlus size={18} />;
   }
-  if (type === "message") {
-    return <MessageCircle size={18} />;
-  }
   if (type === "rank") {
     return <Trophy size={18} />;
   }
@@ -42,9 +45,6 @@ function notificationIcon(type: RanksterNotification["type"]) {
 function notificationTone(type: RanksterNotification["type"]) {
   if (type === "follow") {
     return "bg-sky-50 text-sky-600";
-  }
-  if (type === "message") {
-    return "bg-violet-50 text-violet-600";
   }
   if (type === "rank") {
     return "bg-amber-50 text-amber-600";
@@ -60,6 +60,8 @@ export function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [freshNotificationIds, setFreshNotificationIds] = useState<string[]>([]);
+  const freshTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     if (isAuthLoading || authError) {
@@ -92,6 +94,52 @@ export function NotificationsPage() {
       cancelled = true;
     };
   }, [authError, isAuthLoading]);
+
+  useEffect(() => {
+    if (isAuthLoading || authError || !session) {
+      return;
+    }
+
+    let socket: WebSocket | null = null;
+
+    try {
+      socket = new WebSocket(getNotificationsSocketUrl());
+      socket.onmessage = (event) => {
+        try {
+          const payload = parseNotificationSocketEvent(event.data as string);
+          setUnreadCount(payload.unreadCount);
+
+          if (payload.type !== "notification" || !payload.notification) {
+            return;
+          }
+
+          const notification = payload.notification;
+          setNotifications((current) => [
+            notification,
+            ...current.filter((item) => item.id !== notification.id),
+          ]);
+          setFreshNotificationIds((current) =>
+            current.includes(notification.id) ? current : [...current, notification.id],
+          );
+
+          const timer = window.setTimeout(() => {
+            setFreshNotificationIds((current) => current.filter((id) => id !== notification.id));
+          }, 6000);
+          freshTimersRef.current.push(timer);
+        } catch {
+          setError("Received an unreadable notification update.");
+        }
+      };
+    } catch {
+      socket = null;
+    }
+
+    return () => {
+      socket?.close();
+      freshTimersRef.current.forEach(window.clearTimeout);
+      freshTimersRef.current = [];
+    };
+  }, [authError, isAuthLoading, session?.user.id]);
 
   async function handleNotificationClick(notification: RanksterNotification) {
     if (!notification.read) {
@@ -191,52 +239,60 @@ export function NotificationsPage() {
           </div>
           <h2 className="mt-4 text-lg font-black text-gray-900">No notifications yet</h2>
           <p className="mt-2 text-sm leading-6 text-gray-500">
-            Follows, messages, and ranking activity will show up here.
+            Follows, comments, and ranking activity will show up here. Message alerts stay in DM.
           </p>
         </div>
       ) : (
         <div className="space-y-2 px-4 py-4">
-          {notifications.map((notification) => (
-            <button
-              key={notification.id}
-              onClick={() => void handleNotificationClick(notification)}
-              className={`flex w-full gap-3 rounded-3xl border p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${
-                notification.read ? "border-gray-100 bg-white" : "border-violet-100 bg-violet-50/60"
-              }`}
-            >
-              <div className="relative flex-shrink-0">
-                {notification.actor ? (
-                  <Image
-                    src={notification.actor.avatar}
-                    alt={notification.actor.displayName}
-                    width={44}
-                    height={44}
-                    className="h-11 w-11 rounded-2xl object-cover"
-                  />
-                ) : (
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${notificationTone(notification.type)}`}>
-                    {notificationIcon(notification.type)}
-                  </div>
-                )}
-                {notification.actor ? (
-                  <span className={`absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-xl border-2 border-white ${notificationTone(notification.type)}`}>
-                    {notificationIcon(notification.type)}
-                  </span>
-                ) : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-black text-gray-900">{notification.title}</p>
-                  <span className="flex-shrink-0 text-[10px] font-medium text-gray-400">{notification.createdAt}</span>
+          {notifications.map((notification) => {
+            const isFresh = freshNotificationIds.includes(notification.id);
+
+            return (
+              <button
+                key={notification.id}
+                onClick={() => void handleNotificationClick(notification)}
+                className={`flex w-full gap-3 rounded-3xl border p-4 text-left shadow-sm transition-all duration-700 hover:-translate-y-0.5 hover:shadow-md ${
+                  isFresh
+                    ? "scale-[1.01] border-rose-200 bg-rose-50 shadow-rose-100"
+                    : "border-gray-100 bg-white"
+                }`}
+              >
+                <div className="relative flex-shrink-0">
+                  {notification.actor ? (
+                    <Image
+                      src={notification.actor.avatar}
+                      alt={notification.actor.displayName}
+                      width={44}
+                      height={44}
+                      className="h-11 w-11 rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${notificationTone(notification.type)}`}>
+                      {notificationIcon(notification.type)}
+                    </div>
+                  )}
+                  {notification.actor ? (
+                    <span className={`absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-xl border-2 border-white ${notificationTone(notification.type)}`}>
+                      {notificationIcon(notification.type)}
+                    </span>
+                  ) : null}
                 </div>
-                <p className="mt-1 text-sm leading-5 text-gray-500">{notification.body}</p>
-                {notification.actor ? (
-                  <p className="mt-2 text-xs font-bold text-violet-600">@{notification.actor.username}</p>
-                ) : null}
-              </div>
-              {!notification.read ? <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-500" /> : null}
-            </button>
-          ))}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className={`text-sm ${notification.read ? "font-bold text-gray-800" : "font-black text-gray-900"}`}>
+                      {notification.title}
+                    </p>
+                    <span className="flex-shrink-0 text-[10px] font-medium text-gray-400">{notification.createdAt}</span>
+                  </div>
+                  <p className="mt-1 text-sm leading-5 text-gray-500">{notification.body}</p>
+                  {notification.actor ? (
+                    <p className="mt-2 text-xs font-bold text-violet-600">@{notification.actor.username}</p>
+                  ) : null}
+                </div>
+                {!notification.read ? <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-500" /> : null}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
