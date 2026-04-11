@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, PlusCircle, LayoutGrid, MessageCircle, User } from "lucide-react";
+import { Home, Search, PlusCircle, MessageCircle, User } from "lucide-react";
 import {
   fetchMessageUnreadCount,
   getMessageInboxSocketUrl,
@@ -15,7 +15,6 @@ const navItems = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/search", icon: Search, label: "Search" },
   { to: "/create", icon: PlusCircle, label: "Create", primary: true },
-  { to: "/board", icon: LayoutGrid, label: "Board" },
   { to: "/dm", icon: MessageCircle, label: "DM" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
