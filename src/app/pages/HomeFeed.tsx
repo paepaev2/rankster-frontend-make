@@ -6,7 +6,13 @@ import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
 import { AppErrorState, FeedSkeleton } from "../components/AppStateViews";
-import { type FeedScope, fetchMainFeed, fetchNotifications } from "../lib/ranksterApi";
+import {
+  type FeedScope,
+  fetchMainFeed,
+  fetchNotifications,
+  getNotificationsSocketUrl,
+  parseNotificationSocketEvent,
+} from "../lib/ranksterApi";
 import type { RankPost } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
 
@@ -40,6 +46,7 @@ export function HomeFeed() {
     }
 
     let cancelled = false;
+    let socket: WebSocket | null = null;
     void fetchNotifications()
       .then((response) => {
         if (!cancelled) {
@@ -52,8 +59,23 @@ export function HomeFeed() {
         }
       });
 
+    try {
+      socket = new WebSocket(getNotificationsSocketUrl());
+      socket.onmessage = (event) => {
+        try {
+          const payload = parseNotificationSocketEvent(event.data as string);
+          setUnreadNotifications(payload.unreadCount);
+        } catch {
+          setUnreadNotifications((current) => current);
+        }
+      };
+    } catch {
+      socket = null;
+    }
+
     return () => {
       cancelled = true;
+      socket?.close();
     };
   }, [authError, currentUser?.id]);
 

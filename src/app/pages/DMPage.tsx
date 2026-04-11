@@ -179,6 +179,10 @@ export function DMPage() {
       .then((thread) => {
         if (!cancelled) {
           setActiveThread(thread);
+          setThreads((currentThreads) =>
+            currentThreads.map((item) => (item.id === thread.id ? { ...item, unread: 0 } : item)),
+          );
+          window.dispatchEvent(new Event("rankster:messages-read"));
         }
       })
       .catch((threadError) => {
