@@ -5,15 +5,18 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
-import { fetchMainFeed } from "../lib/ranksterApi";
+import { type FeedScope, fetchMainFeed } from "../lib/ranksterApi";
 import type { RankPost } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
 
-const FILTER_TABS = ["For You", "Following"];
+const FILTER_TABS = [
+  { label: "For You", scope: "for-you" as const },
+  { label: "Following", scope: "following" as const },
+];
 
 export function HomeFeed() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("For You");
+  const [activeTab, setActiveTab] = useState<FeedScope>("for-you");
   const [feedItems, setFeedItems] = useState<RankPost[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,15 +27,15 @@ export function HomeFeed() {
 
   useEffect(() => {
     if (!isAuthLoading && !authError) {
-      void loadFeed();
+      void loadFeed(activeTab);
     }
-  }, [isAuthLoading, authError]);
+  }, [activeTab, isAuthLoading, authError]);
 
   function navigate(path: string) {
     router.push(path);
   }
 
-  async function loadFeed(cursor?: string | null) {
+  async function loadFeed(scope: FeedScope, cursor?: string | null) {
     const isLoadMore = Boolean(cursor);
 
     if (isLoadMore) {
@@ -40,10 +43,12 @@ export function HomeFeed() {
     } else {
       setIsLoading(true);
       setError(null);
+      setFeedItems([]);
+      setNextCursor(null);
     }
 
     try {
-      const response = await fetchMainFeed(cursor);
+      const response = await fetchMainFeed(scope, cursor);
       setFeedItems((currentItems) => (isLoadMore ? [...currentItems, ...response.items] : response.items));
       setNextCursor(response.nextCursor);
     } catch (loadError) {
@@ -63,7 +68,7 @@ export function HomeFeed() {
               <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center">
                 <Trophy size={16} className="text-white" />
               </div>
-              <span className="text-xl font-black text-gray-900 tracking-tight">Rankit</span>
+              <span className="text-xl font-black text-gray-900 tracking-tight">Rankster</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -94,15 +99,15 @@ export function HomeFeed() {
           <div className="flex gap-1 pb-0">
             {FILTER_TABS.map((tab) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tab.scope}
+                onClick={() => setActiveTab(tab.scope)}
                 className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 ${
-                  activeTab === tab
+                  activeTab === tab.scope
                     ? "text-violet-600 border-violet-600"
                     : "text-gray-400 border-transparent hover:text-gray-600"
                 }`}
               >
-                {tab}
+                {tab.label}
               </button>
             ))}
           </div>
@@ -120,7 +125,7 @@ export function HomeFeed() {
           <div className="bg-white border border-red-100 rounded-2xl p-6 text-center">
             <p className="text-sm text-red-500">{authError || error}</p>
             <button
-              onClick={() => void loadFeed()}
+              onClick={() => void loadFeed(activeTab)}
               className="mt-4 rounded-xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-600"
             >
               Try again
@@ -139,14 +144,16 @@ export function HomeFeed() {
 
         {!isAuthLoading && !authError && !isLoading && !error && feedItems.length === 0 && (
           <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">
-            No posts yet. Start the backend to see the live feed here.
+            {activeTab === "following"
+              ? "Follow people to fill your Following feed."
+              : "No posts yet. Start the backend to see the live feed here."}
           </div>
         )}
 
         {nextCursor && !error && (
           <div className="text-center py-6">
             <button
-              onClick={() => void loadFeed(nextCursor)}
+              onClick={() => void loadFeed(activeTab, nextCursor)}
               disabled={isLoadingMore}
               className="px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all shadow-sm disabled:opacity-60"
             >
