@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
+import { AppErrorState, FeedSkeleton } from "../components/AppStateViews";
 import { type FeedScope, fetchMainFeed } from "../lib/ranksterApi";
 import type { RankPost } from "../lib/feedUi";
 import { useMockSession } from "../lib/useMockSession";
@@ -116,21 +117,16 @@ export function HomeFeed() {
 
       <div className="px-4 py-4 space-y-4">
         {(isAuthLoading || isLoading) && (
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">
-            Loading rankings...
-          </div>
+          <FeedSkeleton />
         )}
 
         {!isAuthLoading && (authError || error) && (
-          <div className="bg-white border border-red-100 rounded-2xl p-6 text-center">
-            <p className="text-sm text-red-500">{authError || error}</p>
-            <button
-              onClick={() => void loadFeed(activeTab)}
-              className="mt-4 rounded-xl bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-600"
-            >
-              Try again
-            </button>
-          </div>
+          <AppErrorState
+            title="Could not load rankings"
+            message={authError || error || "Rankster could not load your feed right now."}
+            onRetry={() => void loadFeed(activeTab)}
+            variant="inline"
+          />
         )}
 
         {!isAuthLoading && !authError && !isLoading && !error && feedItems.map((post) => (
