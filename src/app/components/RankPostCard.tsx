@@ -6,6 +6,7 @@ import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronD
 import type { RankPost, TierData } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
+import { useSaved } from "../lib/savedContext";
 
 interface RankPostCardProps {
   post: RankPost;
@@ -326,7 +327,8 @@ type ShareState = "idle" | "generating" | "done" | "error";
 export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }: RankPostCardProps) {
   const [liked, setLiked] = useState(post.isLiked);
   const [likeCount, setLikeCount] = useState(post.likes);
-  const [saved, setSaved] = useState(false);
+  const { savedIds, toggleSave } = useSaved();
+  const saved = savedIds.has(post.id);
   const [expanded, setExpanded] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -634,8 +636,9 @@ export function RankPostCard({ post, onProfileClick, onTopicClick, onRankThis }:
         </div>
 
         <button
-          onClick={() => setSaved(!saved)}
+          onClick={() => toggleSave(post)}
           className={`transition-colors ${saved ? "text-violet-500" : "text-gray-400 hover:text-violet-500"}`}
+          title={saved ? "Remove from saved" : "Save to rank later"}
         >
           <Bookmark size={19} className={saved ? "fill-violet-500" : ""} />
         </button>

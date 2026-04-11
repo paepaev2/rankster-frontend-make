@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Bell, Trophy, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
@@ -136,18 +135,6 @@ export function HomeFeed() {
                     {unreadNotifications > 9 ? "9+" : unreadNotifications}
                   </span>
                 ) : null}
-              </button>
-              <button
-                onClick={() => navigate("/profile")}
-                className="w-9 h-9 rounded-xl overflow-hidden ring-2 ring-violet-200"
-              >
-                {currentUser ? (
-                  <Image src={currentUser.avatar} alt={currentUser.displayName} width={36} height={36} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-bold">
-                    Me
-                  </div>
-                )}
               </button>
             </div>
           </div>

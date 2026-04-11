@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, BarChart2, Heart, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, BarChart2, Bookmark, Heart, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
 import { TierListDisplay } from "../components/TierListDisplay";
 import type { Category, ProfileResponse, RankPost } from "../lib/feedUi";
+import { useSaved } from "../lib/savedContext";
 import {
   fetchCategories,
   fetchCurrentUserProfile,
@@ -17,7 +18,7 @@ import {
 } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
 
-const PROFILE_TABS = ["Rankings", "Liked", "Stats"] as const;
+const PROFILE_TABS = ["Rankings", "Saved", "Stats"] as const;
 
 export function ProfilePage() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export function ProfilePage() {
   const username = params?.username;
   const isMe = !username || username === "me";
   const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
+  const { savedPosts, toggleSave } = useSaved();
   const [activeTab, setActiveTab] = useState<(typeof PROFILE_TABS)[number]>("Rankings");
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -200,10 +202,16 @@ export function ProfilePage() {
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 pt-12 pb-3">
-          <button onClick={() => router.back()} className="text-gray-600" aria-label="Go back">
-            <ArrowLeft size={22} />
-          </button>
-          <span className="text-base font-bold text-gray-900">@{profileUser.username}</span>
+          {isMe ? (
+            <span className="text-xl font-black text-gray-900">Profile</span>
+          ) : (
+            <button onClick={() => router.back()} className="text-gray-600" aria-label="Go back">
+              <ArrowLeft size={22} />
+            </button>
+          )}
+          {!isMe && (
+            <span className="text-base font-bold text-gray-900">@{profileUser.username}</span>
+          )}
           <div className="flex items-center gap-1">
             <button className="flex h-9 w-9 items-center justify-center text-gray-500 transition-colors hover:text-gray-700" aria-label="Share profile">
               <Share2 size={19} />
@@ -306,23 +314,26 @@ export function ProfilePage() {
           </div>
         </div>
 
-        <div className="flex gap-0 border-t border-gray-100">
-          {PROFILE_TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 border-b-2 py-3 text-sm font-semibold transition-all ${
-                activeTab === tab ? "border-violet-600 text-violet-600" : "border-transparent text-gray-400"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        {isMe && (
+          <div className="flex gap-0 border-t border-gray-100">
+            {PROFILE_TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 border-b-2 py-3 text-sm font-semibold transition-all ${
+                  activeTab === tab ? "border-violet-600 text-violet-600" : "border-transparent text-gray-400"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
+        {!isMe && <div className="border-t border-gray-100" />}
       </div>
 
       <div className="px-4 py-4">
-        {activeTab === "Rankings" ? (
+        {(activeTab === "Rankings" || !isMe) ? (
           <div className="space-y-3">
             {sortedPosts.length === 0 ? (
               <div className="py-16 text-center">
@@ -394,28 +405,48 @@ export function ProfilePage() {
           </div>
         ) : null}
 
-        {activeTab === "Liked" ? (
-          <div className="grid grid-cols-2 gap-3">
-            {profile.likedPosts.map((post) => (
-              <div key={post.id} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-                <div className="relative">
-                  <div className="relative h-24 w-full">
-                    <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="(max-width: 768px) 50vw, 220px" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        {activeTab === "Saved" && isMe ? (
+          savedPosts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <span className="text-5xl mb-4">🔖</span>
+              <h3 className="text-base font-bold text-gray-800 mb-1">No saved rankings yet</h3>
+              <p className="text-sm text-gray-400 max-w-[220px]">
+                Tap the bookmark icon on any ranking to save it and rank it yourself later.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-gray-400 font-medium">{savedPosts.length} saved</p>
+              {savedPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3"
+                >
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                    <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="64px" />
                   </div>
-                  <div className="absolute bottom-0 left-0 p-2">
-                    <p className="line-clamp-2 text-xs leading-tight font-bold text-white">{post.title}</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">by @{post.user.username}</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                        <Heart size={11} className="text-red-400" />
+                        {(post.likes / 1000).toFixed(1)}k
+                      </span>
+                      <span className="text-xs text-gray-400">{post.createdAt}</span>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => toggleSave(post)}
+                    className="flex-shrink-0 self-center text-violet-500 hover:text-violet-700 transition-colors p-1"
+                    title="Remove from saved"
+                  >
+                    <Bookmark size={18} className="fill-violet-500" />
+                  </button>
                 </div>
-                <div className="p-2">
-                  <div className="flex items-center gap-1">
-                    <Image src={post.user.avatar} alt="" width={16} height={16} className="h-4 w-4 rounded-full object-cover" />
-                    <span className="text-[10px] text-gray-400">@{post.user.username}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         ) : null}
 
         {activeTab === "Stats" ? (
@@ -423,18 +454,18 @@ export function ProfilePage() {
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
                 <BarChart2 size={18} className="text-violet-500" />
-                <h3 className="font-bold text-gray-900">Profile Stats</h3>
+                <h3 className="font-bold text-gray-900">Your Statistics</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Total Rankings", value: profile.stats.totalRankings, emoji: "🏆" },
-                  { label: "Followers", value: formatFollowers(profile.stats.followers), emoji: "👥" },
-                  { label: "Following", value: formatFollowers(profile.stats.following), emoji: "➡️" },
-                  { label: "Total Likes", value: `${(profile.stats.totalLikes / 1000).toFixed(1)}k`, emoji: "❤️" },
+                  { label: "Total Rankings", value: profile.stats.totalRankings, emoji: "🏆", color: "text-violet-600" },
+                  { label: "Total Likes", value: `${(profile.stats.totalLikes / 1000).toFixed(1)}k`, emoji: "❤️", color: "text-red-500" },
+                  { label: "Followers", value: formatFollowers(profile.stats.followers), emoji: "👥", color: "text-blue-500" },
+                  { label: "Following", value: formatFollowers(profile.stats.following), emoji: "➡️", color: "text-green-500" },
                 ].map((stat) => (
                   <div key={stat.label} className="rounded-xl bg-gray-50 p-3">
                     <div className="mb-1 text-xl">{stat.emoji}</div>
-                    <p className="text-lg font-black text-gray-900">{stat.value}</p>
+                    <p className={`text-lg font-black ${stat.color}`}>{stat.value}</p>
                     <p className="text-[10px] font-medium text-gray-400">{stat.label}</p>
                   </div>
                 ))}
@@ -442,10 +473,10 @@ export function ProfilePage() {
             </div>
 
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-              <h3 className="mb-3 font-bold text-gray-900">Favorite Categories</h3>
+              <h3 className="mb-3 font-bold text-gray-900">Rankings by Category</h3>
               {profile.favoriteCategories.map((category) => (
                 <div key={category.id} className="mb-3 flex items-center gap-3 last:mb-0">
-                  <span>{category.emoji}</span>
+                  <span className="w-7 text-lg">{category.emoji}</span>
                   <div className="flex-1">
                     <div className="mb-1 flex justify-between text-xs">
                       <span className="font-medium text-gray-700">{category.name}</span>
@@ -457,6 +488,25 @@ export function ProfilePage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <h3 className="mb-3 font-bold text-gray-900">Milestones</h3>
+              <div className="space-y-2.5">
+                {[
+                  { label: "First Ranking", done: true, emoji: "🎉" },
+                  { label: "10 Rankings", done: true, emoji: "🔟" },
+                  { label: "1k Likes", done: true, emoji: "❤️" },
+                  { label: "50 Rankings", done: false, emoji: "⭐" },
+                  { label: "10k Likes", done: false, emoji: "🚀" },
+                ].map((m) => (
+                  <div key={m.label} className={`flex items-center gap-3 rounded-xl p-2.5 ${m.done ? "bg-green-50" : "bg-gray-50"}`}>
+                    <span className="text-lg">{m.emoji}</span>
+                    <span className={`text-sm font-medium ${m.done ? "text-green-700" : "text-gray-400"}`}>{m.label}</span>
+                    {m.done && <span className="ml-auto text-xs font-bold text-green-500">✓ Done</span>}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : null}

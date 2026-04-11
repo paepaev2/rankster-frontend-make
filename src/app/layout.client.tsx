@@ -3,6 +3,7 @@
 import React from 'react';
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { Layout } from '@/app/components/Layout';
+import { SavedProvider } from '@/app/lib/savedContext';
 
 export function RootLayoutClient({
   children,
@@ -11,9 +12,11 @@ export function RootLayoutClient({
 }) {
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const content = (
-    <Layout>
-      {children}
-    </Layout>
+    <SavedProvider>
+      <Layout>
+        {children}
+      </Layout>
+    </SavedProvider>
   );
 
   if (!googleClientId) {
