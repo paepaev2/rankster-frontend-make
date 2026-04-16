@@ -32,7 +32,15 @@ export function TierListDisplay({ tiers, compact = false }: TierListDisplayProps
                     key={item.id}
                     className={`inline-flex items-center gap-1 ${compact ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs"} bg-white rounded-lg border border-gray-200 text-gray-700 font-medium shadow-sm`}
                   >
-                    {item.emoji && <span>{item.emoji}</span>}
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt=""
+                        className={compact ? "h-4 w-4 rounded object-cover" : "h-5 w-5 rounded object-cover"}
+                      />
+                    ) : (
+                      item.emoji && <span>{item.emoji}</span>
+                    )}
                     {item.name}
                   </span>
                 ))

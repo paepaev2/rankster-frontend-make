@@ -14,6 +14,7 @@ export interface TierItem {
   id: string;
   name: string;
   emoji?: string;
+  imageUrl?: string;
 }
 
 export interface TierData {

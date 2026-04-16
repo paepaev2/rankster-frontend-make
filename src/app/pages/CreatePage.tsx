@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
 import type { RankPost, TierData, TierItem as FeedTierItem, TrendingTopic } from "../lib/feedUi";
-import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost } from "../lib/ranksterApi";
+import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost, uploadImage } from "../lib/ranksterApi";
 
 type Mode = "choose" | "create-new" | "rank-existing";
 type ItemFormat = "text" | "image";
@@ -54,6 +54,7 @@ function mapPostItems(post: RankPost): TierItem[] {
       id: item.id,
       name: item.name,
       emoji: item.emoji,
+      imageUrl: item.imageUrl,
     });
   });
 
@@ -66,6 +67,7 @@ function mapPostTierData(post: RankPost): Tier[] {
       id: item.id,
       name: item.name,
       emoji: item.emoji,
+      imageUrl: item.imageUrl,
     }));
 
   return [
@@ -83,6 +85,7 @@ function buildTierPayload(tiers: Tier[]): TierData {
       id: item.id,
       name: item.name,
       emoji: item.emoji,
+      imageUrl: item.imageUrl,
     }));
 
   return {
@@ -236,10 +239,12 @@ function TierImageChip({
 
 interface RankAddItemRowProps {
   itemFormat: ItemFormat;
+  isUploadingImage: boolean;
   rankNewEmoji: string;
   rankNewImageUrl: string;
   rankNewName: string;
   onEmojiChange: (value: string) => void;
+  onImageUpload: (file: File) => void;
   onImageUrlChange: (value: string) => void;
   onNameChange: (value: string) => void;
   onAddItem: () => void;
@@ -247,10 +252,12 @@ interface RankAddItemRowProps {
 
 function RankAddItemRow({
   itemFormat,
+  isUploadingImage,
   rankNewEmoji,
   rankNewImageUrl,
   rankNewName,
   onEmojiChange,
+  onImageUpload,
   onImageUrlChange,
   onNameChange,
   onAddItem,
@@ -267,13 +274,31 @@ function RankAddItemRow({
             className="w-12 rounded-lg border border-gray-100 bg-gray-50 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
           />
         ) : (
-          <input
-            type="text"
-            value={rankNewImageUrl}
-            onChange={(event) => onImageUrlChange(event.target.value)}
-            placeholder="Image URL"
-            className="flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
-          />
+          <div className="flex flex-1 gap-2">
+            <input
+              type="text"
+              value={rankNewImageUrl}
+              onChange={(event) => onImageUrlChange(event.target.value)}
+              placeholder="Image URL"
+              className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
+            />
+            <label className="flex cursor-pointer items-center rounded-lg border border-violet-100 bg-violet-50 px-2 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-100">
+              {isUploadingImage ? "..." : "Upload"}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={isUploadingImage}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (file) {
+                    onImageUpload(file);
+                  }
+                }}
+              />
+            </label>
+          </div>
         )}
         <input
           type="text"
@@ -317,6 +342,8 @@ export function CreatePage() {
   const [searchTopic, setSearchTopic] = useState("");
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>(TRENDING_TOPICS);
   const [topicsError, setTopicsError] = useState<string | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [uploadingImageTarget, setUploadingImageTarget] = useState<"items" | "rank" | null>(null);
   const [loadingSourcePostId, setLoadingSourcePostId] = useState<string | null>(null);
   const [loadingEditPostId, setLoadingEditPostId] = useState<string | null>(null);
   const [selectedSourcePostId, setSelectedSourcePostId] = useState<string | null>(null);
@@ -364,7 +391,7 @@ export function CreatePage() {
       setEditingPostId(null);
       setSelectedSourcePostId(post.id);
       setSelectedSourceTags(post.tags);
-      setItemFormat("text");
+      setItemFormat(post.allItems.some((item) => item.imageUrl) ? "image" : "text");
       setItems(mapPostItems(post));
       setTiers(createDefaultTiers());
       setMode("create-new");
@@ -393,7 +420,7 @@ export function CreatePage() {
       setIsPublic(post.isPublic);
       setSelectedSourcePostId(null);
       setSelectedSourceTags(post.tags);
-      setItemFormat("text");
+      setItemFormat(post.allItems.some((item) => item.imageUrl) ? "image" : "text");
       setItems(mapPostItems(post));
       setTiers(mapPostTierData(post));
       setMode("create-new");
@@ -431,6 +458,24 @@ export function CreatePage() {
 
     void loadEditPost(editPostId);
   }, [editingPostId, loadEditPost, loadingEditPostId, searchParams]);
+
+  const uploadItemImage = async (file: File, target: "items" | "rank") => {
+    setImageUploadError(null);
+    setUploadingImageTarget(target);
+    try {
+      await ensureMockSession();
+      const uploaded = await uploadImage(file, "rank-item");
+      if (target === "items") {
+        setNewItemImageUrl(uploaded.url);
+      } else {
+        setRankNewImageUrl(uploaded.url);
+      }
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : "Failed to upload image.");
+    } finally {
+      setUploadingImageTarget(null);
+    }
+  };
 
   const addItem = () => {
     if (!newItemName.trim()) {
@@ -564,6 +609,8 @@ export function CreatePage() {
     setSelectedSourceTags([]);
     setEditingPostId(null);
     setPublishError(null);
+    setImageUploadError(null);
+    setUploadingImageTarget(null);
     setLoadingSourcePostId(null);
     setLoadingEditPostId(null);
   };
@@ -584,6 +631,7 @@ export function CreatePage() {
           id: item.id,
           name: item.name,
           emoji: item.emoji,
+          imageUrl: item.imageUrl,
         })),
         isPublic,
       };
@@ -890,8 +938,24 @@ export function CreatePage() {
                     onChange={(event) => setNewItemImageUrl(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && addItem()}
                     placeholder="Image URL (optional)"
-                    className="flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="min-w-0 flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
                   />
+                  <label className="flex h-10 cursor-pointer items-center rounded-xl border border-violet-100 bg-violet-50 px-3 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-100">
+                    {uploadingImageTarget === "items" ? "Uploading..." : "Upload"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      disabled={uploadingImageTarget !== null}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (file) {
+                          void uploadItemImage(file, "items");
+                        }
+                      }}
+                    />
+                  </label>
                   {newItemImageUrl && (
                     <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200">
                       <img
@@ -911,6 +975,7 @@ export function CreatePage() {
                     <Plus size={18} />
                   </button>
                 </div>
+                {imageUploadError && <p className="text-xs font-medium text-red-500">{imageUploadError}</p>}
               </div>
             )}
 
@@ -1112,14 +1177,17 @@ export function CreatePage() {
               <div className="mb-2">
                 <RankAddItemRow
                   itemFormat={itemFormat}
+                  isUploadingImage={uploadingImageTarget !== null}
                   rankNewEmoji={rankNewEmoji}
                   rankNewImageUrl={rankNewImageUrl}
                   rankNewName={rankNewName}
                   onEmojiChange={setRankNewEmoji}
+                  onImageUpload={(file) => void uploadItemImage(file, "rank")}
                   onImageUrlChange={setRankNewImageUrl}
                   onNameChange={setRankNewName}
                   onAddItem={addItemInRank}
                 />
+                {imageUploadError && <p className="mt-2 text-xs font-medium text-red-500">{imageUploadError}</p>}
               </div>
             )}
 

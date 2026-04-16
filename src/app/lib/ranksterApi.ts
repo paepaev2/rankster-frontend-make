@@ -85,7 +85,7 @@ async function apiFetch<T>(path: string, init: RequestInit = {}, requireAuth = t
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  if (init.body && !headers.has("Content-Type")) {
+  if (typeof init.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -174,6 +174,13 @@ export async function fetchCurrentUserProfile() {
   return apiFetch<ProfileResponse>("/profile/me");
 }
 
+export async function updateCurrentUserProfile(input: Pick<User, "displayName" | "bio" | "avatar">) {
+  return apiFetch<ProfileResponse>("/profile/me", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
 export async function fetchUserProfile(username: string) {
   return apiFetch<ProfileResponse>(`/profile/${encodeURIComponent(username)}`);
 }
@@ -235,6 +242,24 @@ export async function updateRankPost(postId: string, input: UpdateRankPostInput)
   return apiFetch<RankPost>(`/feed/post/${encodeURIComponent(postId)}`, {
     method: "PATCH",
     body: JSON.stringify(input),
+  });
+}
+
+export interface UploadedImage {
+  url: string;
+  path: string;
+  contentType: string;
+  size: number;
+}
+
+export async function uploadImage(file: File, purpose = "image") {
+  const formData = new FormData();
+  formData.set("file", file);
+  formData.set("purpose", purpose);
+
+  return apiFetch<UploadedImage>("/uploads/images", {
+    method: "POST",
+    body: formData,
   });
 }
 
