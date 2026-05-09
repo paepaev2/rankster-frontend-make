@@ -1,0 +1,16 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+
+# Local environment files
+.env.local
+.env.*.local
+
+# Local browser/testing artifacts
+.playwright-cli/
+output/
+outputs/
+
+# OS/editor noise
+.DS_Store

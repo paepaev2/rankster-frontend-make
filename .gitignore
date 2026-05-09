@@ -36,10 +36,15 @@ yarn-error.log*
 *~
 *.iml
 .playwright-cli/
+.vercel/
 output/playwright/
+output/ui-flow-slide/
+output/stack-logos/
+outputs/
 
 # OS
 .DS_Store
 Thumbs.db
 
 *.tsbuildinfo
+.vercel
