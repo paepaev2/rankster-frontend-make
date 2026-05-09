@@ -3,7 +3,8 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Flame, Search, TrendingUp, Users, X } from "lucide-react";
+import { Flame, MessageCircle, Search, TrendingUp, Users, X } from "lucide-react";
+import { messagePathForUsername } from "../lib/navigation";
 import { fetchCategories, fetchSearchOverview, fetchTrendingTopics } from "../lib/ranksterApi";
 import type { Category, SearchOverviewResponse, TrendingTopic, User } from "../lib/feedUi";
 
@@ -124,31 +125,42 @@ export function SearchPage() {
             <h2 className="mb-3 text-sm font-bold tracking-wider text-gray-500 uppercase">People</h2>
             <div className="space-y-2">
               {visibleUsers.map((user) => (
-                <button
+                <div
                   key={user.id}
-                  onClick={() => router.push(`/profile/${user.username}`)}
                   className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-violet-200"
                 >
-                  <Image
-                    src={user.avatar}
-                    alt={user.displayName}
-                    width={48}
-                    height={48}
-                    className="h-12 w-12 rounded-xl object-cover"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-semibold text-gray-900">{user.displayName}</span>
-                      {user.verified ? <span className="text-xs text-violet-500">✓</span> : null}
+                  <button
+                    onClick={() => router.push(`/profile/${user.username}`)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <Image
+                      src={user.avatar}
+                      alt={user.displayName}
+                      width={48}
+                      height={48}
+                      className="h-12 w-12 rounded-xl object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="truncate text-sm font-semibold text-gray-900">{user.displayName}</span>
+                        {user.verified ? <span className="text-xs text-violet-500">✓</span> : null}
+                      </div>
+                      <span className="text-xs text-gray-400">@{user.username}</span>
+                      <div className="mt-0.5 flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{formatCount(user.followers)} followers</span>
+                        <span className="text-xs text-gray-300">·</span>
+                        <span className="text-xs text-gray-500">{user.totalRankings} rankings</span>
+                      </div>
                     </div>
-                    <span className="text-xs text-gray-400">@{user.username}</span>
-                    <div className="mt-0.5 flex items-center gap-2">
-                      <span className="text-xs text-gray-500">{formatCount(user.followers)} followers</span>
-                      <span className="text-xs text-gray-300">·</span>
-                      <span className="text-xs text-gray-500">{user.totalRankings} rankings</span>
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={() => router.push(messagePathForUsername(user.username))}
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 transition-colors hover:bg-violet-100"
+                    aria-label={`Message ${user.displayName}`}
+                  >
+                    <MessageCircle size={18} />
+                  </button>
+                </div>
               ))}
             </div>
           </div>

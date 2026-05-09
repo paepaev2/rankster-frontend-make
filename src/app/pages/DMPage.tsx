@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Image as ImageIcon, Search, Send, Smile } from "lucide-react";
-import { fetchMessageThread, fetchMessageThreads, getMessageThreadSocketUrl, sendMessage } from "../lib/ranksterApi";
+import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
+import { fetchMessageThread, fetchMessageThreads, getMessageThreadSocketUrl, sendMessage, startMessageThread } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
 import type { ChatMessage, ChatSocketEvent, Message, MessageThreadDetail } from "../lib/feedUi";
 
@@ -90,7 +91,22 @@ function DMConversationSkeleton() {
   );
 }
 
-export function DMPage() {
+interface DMPageProps {
+  initialUsername?: string;
+}
+
+function buildThreadSummary(thread: MessageThreadDetail): Message {
+  const lastMessage = thread.messages.at(-1);
+  return {
+    id: thread.id,
+    user: thread.user,
+    lastMessage: lastMessage?.text ?? "Say hi to start the conversation",
+    timestamp: lastMessage?.timestamp ?? "now",
+    unread: 0,
+  };
+}
+
+export function DMPage({ initialUsername }: DMPageProps) {
   const router = useRouter();
   const { session, isLoading: isAuthLoading, error: authError } = useMockSession();
   const [threads, setThreads] = useState<Message[]>([]);
@@ -105,6 +121,7 @@ export function DMPage() {
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const startedUsernameRef = useRef<string | null>(null);
 
   const appendMessage = useCallback((threadId: string, message: ChatMessage) => {
     setActiveThread((current) => {
@@ -164,6 +181,48 @@ export function DMPage() {
       cancelled = true;
     };
   }, [isAuthLoading, authError]);
+
+  useEffect(() => {
+    const username = initialUsername?.trim();
+    if (!username || isAuthLoading || authError || !session || startedUsernameRef.current === username) {
+      return;
+    }
+
+    let cancelled = false;
+    startedUsernameRef.current = username;
+    setIsThreadLoading(true);
+    setError(null);
+
+    void startMessageThread(username)
+      .then((thread) => {
+        if (cancelled) {
+          return;
+        }
+
+        setActiveThread(thread);
+        setActiveThreadId(thread.id);
+        setThreads((currentThreads) => [
+          buildThreadSummary(thread),
+          ...currentThreads.filter((item) => item.id !== thread.id),
+        ]);
+        router.replace("/dm", { scroll: false });
+      })
+      .catch((threadError) => {
+        if (!cancelled) {
+          startedUsernameRef.current = null;
+          setError(threadError instanceof Error ? threadError.message : "Failed to start conversation.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsThreadLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authError, initialUsername, isAuthLoading, router, session]);
 
   useEffect(() => {
     if (!activeThreadId) {
@@ -308,12 +367,15 @@ export function DMPage() {
   }
 
   if (!session) {
+    const returnPath = initialUsername ? messagePathForUsername(initialUsername) : "/dm";
     return (
       <div className="px-4 pt-16">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 text-center shadow-sm">
-          <p className="text-sm text-gray-700">Sign in to open your direct messages.</p>
+          <p className="text-sm text-gray-700">
+            {initialUsername ? `Sign in to message @${initialUsername}.` : "Sign in to open your direct messages."}
+          </p>
           <button
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(loginPathForReturnTo(returnPath))}
             className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
           >
             Go to login
@@ -367,33 +429,51 @@ export function DMPage() {
             <DMConversationSkeleton />
           ) : (
             <div className="space-y-3">
-              {activeThread?.messages.map((message) => (
-                <div key={message.id} className={`flex gap-2 ${message.mine ? "justify-end" : "justify-start"}`}>
-                  {!message.mine && activeChatUser ? (
+              {activeThread?.messages.length === 0 ? (
+                <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
+                  {activeChatUser ? (
                     <Image
                       src={activeChatUser.avatar}
-                      alt=""
-                      width={28}
-                      height={28}
-                      className="h-7 w-7 self-end rounded-full object-cover"
+                      alt={activeChatUser.displayName}
+                      width={72}
+                      height={72}
+                      className="h-[72px] w-[72px] rounded-3xl object-cover shadow-sm"
                     />
                   ) : null}
-                  <div className="max-w-[75%]">
-                    <div
-                      className={`rounded-2xl px-4 py-2.5 text-sm ${
-                        message.mine
-                          ? "rounded-br-sm bg-violet-600 text-white"
-                          : "rounded-bl-sm bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {message.text}
-                    </div>
-                    <p className={`mt-1 text-[10px] text-gray-400 ${message.mine ? "text-right" : "text-left"}`}>
-                      {message.timestamp}
-                    </p>
-                  </div>
+                  <h2 className="mt-4 text-lg font-black text-gray-900">Message {activeChatUser?.displayName ?? "this user"}</h2>
+                  <p className="mt-1 max-w-[260px] text-sm leading-6 text-gray-500">
+                    Start the conversation with a ranking take, recommendation, or quick hello.
+                  </p>
                 </div>
-              ))}
+              ) : (
+                activeThread?.messages.map((message) => (
+                  <div key={message.id} className={`flex gap-2 ${message.mine ? "justify-end" : "justify-start"}`}>
+                    {!message.mine && activeChatUser ? (
+                      <Image
+                        src={activeChatUser.avatar}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 self-end rounded-full object-cover"
+                      />
+                    ) : null}
+                    <div className="max-w-[75%]">
+                      <div
+                        className={`rounded-2xl px-4 py-2.5 text-sm ${
+                          message.mine
+                            ? "rounded-br-sm bg-violet-600 text-white"
+                            : "rounded-bl-sm bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {message.text}
+                      </div>
+                      <p className={`mt-1 text-[10px] text-gray-400 ${message.mine ? "text-right" : "text-left"}`}>
+                        {message.timestamp}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -443,7 +523,11 @@ export function DMPage() {
         <div className="px-4 pt-12 pb-4">
           <div className="mb-3 flex items-center justify-between">
             <h1 className="text-2xl font-black text-gray-900">Messages</h1>
-            <button className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-500 transition-colors hover:bg-violet-100" aria-label="New message">
+            <button
+              onClick={() => router.push("/search")}
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-500 transition-colors hover:bg-violet-100"
+              aria-label="Find someone to message"
+            >
               <Edit size={18} />
             </button>
           </div>

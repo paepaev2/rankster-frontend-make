@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, BarChart2, Bookmark, Heart, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
 import { TierListDisplay } from "../components/TierListDisplay";
 import type { Category, ProfileResponse, RankPost } from "../lib/feedUi";
+import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
 import { useSaved } from "../lib/savedContext";
 import {
   fetchCategories,
@@ -148,6 +149,15 @@ export function ProfilePage() {
     }
   };
 
+  const handleMessageProfile = () => {
+    if (!profile || isMe) {
+      return;
+    }
+
+    const messagePath = messagePathForUsername(profile.user.username);
+    router.push(session ? messagePath : loginPathForReturnTo(messagePath));
+  };
+
   const handlePinToggle = async (postId: string) => {
     if (!isMe) {
       return;
@@ -272,18 +282,27 @@ export function ProfilePage() {
                   Edit Profile
                 </button>
               ) : (
-                <button
-                  onClick={() => void handleFollowToggle()}
-                  disabled={isFollowUpdating}
-                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
-                    following
-                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      : "bg-violet-600 text-white hover:bg-violet-700"
-                  } ${isFollowUpdating ? "opacity-70" : ""}`}
-                >
-                  {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
-                  {isFollowUpdating ? "Updating..." : following ? "Following" : "Follow"}
-                </button>
+                <>
+                  <button
+                    onClick={handleMessageProfile}
+                    className="flex items-center gap-1.5 rounded-xl bg-violet-50 px-4 py-2 text-sm font-bold text-violet-600 transition-all hover:bg-violet-100"
+                  >
+                    <MessageCircle size={15} />
+                    Message
+                  </button>
+                  <button
+                    onClick={() => void handleFollowToggle()}
+                    disabled={isFollowUpdating}
+                    className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
+                      following
+                        ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        : "bg-violet-600 text-white hover:bg-violet-700"
+                    } ${isFollowUpdating ? "opacity-70" : ""}`}
+                  >
+                    {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
+                    {isFollowUpdating ? "Updating..." : following ? "Following" : "Follow"}
+                  </button>
+                </>
               )}
             </div>
           </div>

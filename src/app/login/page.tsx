@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trophy, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
+import { getSafeLoginNextPath } from "@/app/lib/navigation";
 import { isMockAuthEnabled, loginWithGoogleCredential, loginWithMockUser } from "@/app/lib/ranksterApi";
 import { useSession } from "@/app/lib/useMockSession";
 
@@ -25,7 +26,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!mockAuthEnabled && !isSessionLoading && session) {
-      router.replace("/");
+      router.replace(getSafeLoginNextPath());
     }
   }, [isSessionLoading, mockAuthEnabled, router, session]);
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
       setIsSigningIn(true);
       setError("");
       await loginWithGoogleCredential(response.credential);
-      router.replace("/");
+      router.replace(getSafeLoginNextPath());
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Failed to sign in with Google.");
     } finally {
@@ -56,7 +57,8 @@ export default function LoginPage() {
       setIsSigningIn(true);
       setError("");
       await loginWithMockUser(username);
-      router.replace("/dm");
+      const nextPath = getSafeLoginNextPath();
+      router.replace(nextPath === "/" ? "/dm" : nextPath);
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Failed to sign in with mock user.");
     } finally {

@@ -283,6 +283,13 @@ export async function fetchMessageThread(threadId: string) {
   return apiFetch<MessageThreadDetail>(`/messages/threads/${encodeURIComponent(threadId)}`);
 }
 
+export async function startMessageThread(username: string) {
+  return apiFetch<MessageThreadDetail>("/messages/threads", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}
+
 export async function sendMessage(threadId: string, text: string) {
   return apiFetch<ChatMessage>(`/messages/threads/${encodeURIComponent(threadId)}/messages`, {
     method: "POST",
