@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronDown, ChevronUp, Loader2, Download, Check } from "lucide-react";
-import type { Comment as RankPostComment, RankPost } from "../lib/feedUi";
+import type { Comment as RankPostComment, RankPost, User } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
@@ -18,6 +18,8 @@ interface RankPostCardProps {
   onEditTierList?: (postId: string) => void;
   onPostUpdated?: (post: RankPost) => void;
   onPostDeleted?: (postId: string) => void;
+  currentUser?: User | null;
+  isAuthLoading?: boolean;
 }
 
 // ── Canvas helpers ────────────────────────────────────────────────────────────
@@ -337,6 +339,8 @@ export function RankPostCard({
   onEditTierList,
   onPostUpdated,
   onPostDeleted,
+  currentUser,
+  isAuthLoading = false,
 }: RankPostCardProps) {
   const [post, setPost] = useState(initialPost);
   const [liked, setLiked] = useState(initialPost.isLiked);
@@ -515,6 +519,12 @@ export function RankPostCard({
   };
 
   const handleCommentLike = async (comment: RankPostComment) => {
+    if (!currentUser) {
+      setShowComments(true);
+      setCommentError("Sign in to like comments.");
+      return;
+    }
+
     if (pendingCommentLikeIds.has(comment.id)) {
       return;
     }
@@ -548,11 +558,25 @@ export function RankPostCard({
       return;
     }
 
+    if (isAuthLoading) {
+      setCommentError("Checking your session. Please try again in a moment.");
+      return;
+    }
+
+    if (!currentUser) {
+      setCommentError("Sign in to comment on this ranking.");
+      return;
+    }
+
     setIsCommentSubmitting(true);
     setCommentError(null);
     try {
       const createdComment = await createComment(post.id, text);
-      setComments((currentComments) => [createdComment, ...currentComments]);
+      const commentWithCurrentProfile =
+        createdComment.user.id === currentUser.id
+          ? { ...createdComment, user: currentUser }
+          : createdComment;
+      setComments((currentComments) => [commentWithCurrentProfile, ...currentComments]);
       setCommentText("");
     } catch (error) {
       setCommentError(error instanceof Error ? error.message : "Could not add your comment.");
@@ -970,25 +994,48 @@ export function RankPostCard({
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmitComment} className="flex gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-              <span className="text-violet-600 text-xs font-bold">A</span>
+          {isAuthLoading ? (
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3 text-xs font-medium text-gray-500">
+              Loading your profile before commenting...
             </div>
-            <input
-              type="text"
-              placeholder="Add a comment..."
-              value={commentText}
-              onChange={(event) => setCommentText(event.target.value)}
-              className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-700 border border-gray-100 focus:outline-none focus:border-violet-300 focus:ring-1 focus:ring-violet-100"
-            />
-            <button
-              type="submit"
-              disabled={isCommentSubmitting || commentText.trim() === ""}
-              className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
-            >
-              {isCommentSubmitting ? "Posting..." : "Post"}
-            </button>
-          </form>
+          ) : currentUser ? (
+            <form onSubmit={handleSubmitComment} className="flex gap-2.5">
+              <Image
+                src={currentUser.avatar}
+                alt={currentUser.displayName}
+                width={28}
+                height={28}
+                className="h-7 w-7 rounded-full object-cover flex-shrink-0"
+              />
+              <input
+                type="text"
+                placeholder={`Comment as ${currentUser.displayName}`}
+                value={commentText}
+                onChange={(event) => setCommentText(event.target.value)}
+                className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-700 border border-gray-100 focus:outline-none focus:border-violet-300 focus:ring-1 focus:ring-violet-100"
+              />
+              <button
+                type="submit"
+                disabled={isCommentSubmitting || commentText.trim() === ""}
+                className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+              >
+                {isCommentSubmitting ? "Posting..." : "Post"}
+              </button>
+            </form>
+          ) : (
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-violet-100 bg-violet-50 px-3 py-3">
+              <div>
+                <p className="text-xs font-bold text-violet-700">Sign in to comment</p>
+                <p className="mt-0.5 text-xs text-violet-500">Join the conversation with your Rankster profile.</p>
+              </div>
+              <a
+                href="/login"
+                className="shrink-0 rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700"
+              >
+                Log in
+              </a>
+            </div>
+          )}
         </div>
       )}
     </div>

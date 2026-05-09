@@ -179,6 +179,8 @@ export function HomeFeed() {
             onTopicClick={(postId) => navigate(`/topic/${postId}`)}
             onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
             onEditTierList={(postId) => navigate(`/create?editPost=${encodeURIComponent(postId)}`)}
+            currentUser={currentUser}
+            isAuthLoading={isAuthLoading}
             onPostUpdated={(updatedPost) => {
               setFeedItems((currentItems) =>
                 currentItems.map((currentPost) => (currentPost.id === updatedPost.id ? updatedPost : currentPost)),

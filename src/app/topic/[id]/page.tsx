@@ -5,12 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { RankPostCard } from "@/app/components/RankPostCard";
 import type { RankPost } from "@/app/lib/feedUi";
 import { fetchPost } from "@/app/lib/ranksterApi";
+import { useMockSession } from "@/app/lib/useMockSession";
 
 export default function Topic() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [post, setPost] = useState<RankPost | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { session, isLoading: isAuthLoading } = useMockSession();
 
   useEffect(() => {
     if (!params.id) {
@@ -40,6 +42,8 @@ export default function Topic() {
           onProfileClick={() => router.push(`/profile/${post.user.username}`)}
           onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
           onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
+          currentUser={session?.user}
+          isAuthLoading={isAuthLoading}
           onPostUpdated={setPost}
           onPostDeleted={() => router.push("/")}
         />
