@@ -28,6 +28,7 @@ export type FeedScope = "for-you" | "following";
 
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
 const ACCESS_TOKEN_KEY = "rankster.accessToken";
+const PRODUCTION_DEMO_AUTH_USERNAMES = new Set(["me", "rankmaster99"]);
 
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
@@ -121,7 +122,7 @@ export async function resolveSession(username = "me") {
   if (token) {
     try {
       const response = await apiFetch<{ user: User }>("/auth/me");
-      if (!isMockAuthEnabled() && response.user.username === "me") {
+      if (!isMockAuthEnabled() && PRODUCTION_DEMO_AUTH_USERNAMES.has(response.user.username)) {
         clearStoredAccessToken();
         return null;
       }
