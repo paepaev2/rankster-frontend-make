@@ -121,6 +121,11 @@ export async function resolveSession(username = "me") {
   if (token) {
     try {
       const response = await apiFetch<{ user: User }>("/auth/me");
+      if (!isMockAuthEnabled() && response.user.username === "me") {
+        clearStoredAccessToken();
+        return null;
+      }
+
       return {
         accessToken: token,
         tokenType: "Bearer",
