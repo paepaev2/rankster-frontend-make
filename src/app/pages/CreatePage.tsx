@@ -23,6 +23,13 @@ interface Tier {
   items: TierItem[];
 }
 
+type DragPayload = { item: TierItem; fromTierId: string | null };
+type PointerDragState = DragPayload & { x: number; y: number };
+type PointerDragHandlers = Pick<
+  React.HTMLAttributes<HTMLDivElement>,
+  "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel"
+>;
+
 const TIER_COLOR_PALETTE = [
   "bg-red-500",
   "bg-orange-400",
@@ -102,6 +109,7 @@ function TextChip({
   draggable: isDraggable,
   onDragStart,
   onDragEnd,
+  pointerDragHandlers,
   onRemove,
   removable = true,
 }: {
@@ -109,6 +117,7 @@ function TextChip({
   draggable?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  pointerDragHandlers?: PointerDragHandlers;
   onRemove?: () => void;
   removable?: boolean;
 }) {
@@ -117,8 +126,9 @@ function TextChip({
       draggable={isDraggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      {...pointerDragHandlers}
       className={`inline-flex select-none items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700 shadow-sm ${
-        isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""
+        isDraggable ? "cursor-grab touch-none active:cursor-grabbing active:opacity-50" : ""
       }`}
     >
       {item.emoji && <span>{item.emoji}</span>}
@@ -126,6 +136,7 @@ function TextChip({
       {removable && onRemove && (
         <button
           onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
             onRemove();
@@ -144,6 +155,7 @@ function ImageChip({
   draggable: isDraggable,
   onDragStart,
   onDragEnd,
+  pointerDragHandlers,
   onRemove,
   removable = true,
 }: {
@@ -151,6 +163,7 @@ function ImageChip({
   draggable?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  pointerDragHandlers?: PointerDragHandlers;
   onRemove?: () => void;
   removable?: boolean;
 }) {
@@ -159,8 +172,9 @@ function ImageChip({
       draggable={isDraggable}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      {...pointerDragHandlers}
       className={`relative flex w-16 select-none flex-col items-center ${
-        isDraggable ? "cursor-grab active:cursor-grabbing active:opacity-50" : ""
+        isDraggable ? "cursor-grab touch-none active:cursor-grabbing active:opacity-50" : ""
       }`}
     >
       <div className="h-14 w-14 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-sm">
@@ -178,6 +192,7 @@ function ImageChip({
       {removable && onRemove && (
         <button
           onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
             onRemove();
@@ -195,11 +210,13 @@ function TierImageChip({
   item,
   onDragStart,
   onDragEnd,
+  pointerDragHandlers,
   onRemove,
 }: {
   item: TierItem;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  pointerDragHandlers?: PointerDragHandlers;
   onRemove?: () => void;
 }) {
   return (
@@ -207,7 +224,8 @@ function TierImageChip({
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      className="relative flex w-12 cursor-grab select-none flex-col items-center active:cursor-grabbing active:opacity-50"
+      {...pointerDragHandlers}
+      className="relative flex w-12 cursor-grab touch-none select-none flex-col items-center active:cursor-grabbing active:opacity-50"
     >
       <div className="h-10 w-10 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-sm">
         {item.imageUrl ? (
@@ -224,6 +242,7 @@ function TierImageChip({
       {onRemove && (
         <button
           onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
             onRemove();
@@ -351,8 +370,10 @@ export function CreatePage() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
-  const dragPayload = useRef<{ item: TierItem; fromTierId: string | null } | null>(null);
+  const dragPayload = useRef<DragPayload | null>(null);
+  const pointerDragRef = useRef<PointerDragState | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [pointerDrag, setPointerDrag] = useState<PointerDragState | null>(null);
 
   const filteredTopics = trendingTopics.filter((topic) =>
     topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
@@ -561,6 +582,22 @@ export function CreatePage() {
     setTiers((prev) => prev.map((tier) => (tier.id === tierId ? { ...tier, label: newLabel } : tier)));
   };
 
+  const resolvePointerDropZone = (clientX: number, clientY: number) => {
+    const element = document.elementFromPoint(clientX, clientY);
+    if (!(element instanceof HTMLElement)) {
+      return null;
+    }
+
+    return element.closest<HTMLElement>("[data-rank-drop-zone]")?.dataset.rankDropZone ?? null;
+  };
+
+  const clearPointerDrag = () => {
+    pointerDragRef.current = null;
+    setPointerDrag(null);
+    dragPayload.current = null;
+    setDragOverId(null);
+  };
+
   const handleDragStart = (item: TierItem, fromTierId: string | null) => {
     dragPayload.current = { item, fromTierId };
   };
@@ -569,6 +606,80 @@ export function CreatePage() {
     dragPayload.current = null;
     setDragOverId(null);
   };
+
+  const commitDrop = (payload: DragPayload, dropZoneId: string | null) => {
+    if (!dropZoneId) {
+      return;
+    }
+
+    if (dropZoneId === "unranked") {
+      if (payload.fromTierId !== null) {
+        removeFromTier(payload.item, payload.fromTierId);
+      }
+      return;
+    }
+
+    if (payload.fromTierId !== dropZoneId) {
+      moveItemToTier(payload.item, payload.fromTierId, dropZoneId);
+    }
+  };
+
+  const handlePointerDragStart = (
+    event: React.PointerEvent<HTMLDivElement>,
+    item: TierItem,
+    fromTierId: string | null,
+  ) => {
+    if (event.pointerType === "mouse") {
+      return;
+    }
+
+    const target = event.target;
+    if (target instanceof HTMLElement && target.closest("button,input,textarea,a,label")) {
+      return;
+    }
+
+    const nextDrag = { item, fromTierId, x: event.clientX, y: event.clientY };
+    dragPayload.current = { item, fromTierId };
+    pointerDragRef.current = nextDrag;
+    setPointerDrag(nextDrag);
+    setDragOverId(resolvePointerDropZone(event.clientX, event.clientY));
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handlePointerDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const activeDrag = pointerDragRef.current;
+    if (!activeDrag) {
+      return;
+    }
+
+    const nextDrag = { ...activeDrag, x: event.clientX, y: event.clientY };
+    pointerDragRef.current = nextDrag;
+    setPointerDrag(nextDrag);
+    setDragOverId(resolvePointerDropZone(event.clientX, event.clientY));
+    event.preventDefault();
+  };
+
+  const handlePointerDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const activeDrag = pointerDragRef.current;
+    if (!activeDrag) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    commitDrop(activeDrag, resolvePointerDropZone(event.clientX, event.clientY));
+    clearPointerDrag();
+    event.preventDefault();
+  };
+
+  const getPointerDragHandlers = (item: TierItem, fromTierId: string | null): PointerDragHandlers => ({
+    onPointerDown: (event) => handlePointerDragStart(event, item, fromTierId),
+    onPointerMove: handlePointerDragMove,
+    onPointerUp: handlePointerDragEnd,
+    onPointerCancel: handlePointerDragEnd,
+  });
 
   const handleDropOnTier = (toTierId: string) => {
     const payload = dragPayload.current;
@@ -1077,6 +1188,7 @@ export function CreatePage() {
               return (
                 <div
                   key={tier.id}
+                  data-rank-drop-zone={tier.id}
                   className={`border-b border-gray-100 transition-colors last:border-0 ${isOver ? "bg-violet-50" : ""}`}
                   onDragOver={(event) => {
                     event.preventDefault();
@@ -1123,6 +1235,7 @@ export function CreatePage() {
                             item={item}
                             onDragStart={() => handleDragStart(item, tier.id)}
                             onDragEnd={handleDragEnd}
+                            pointerDragHandlers={getPointerDragHandlers(item, tier.id)}
                             onRemove={() => removeFromTier(item, tier.id)}
                           />
                         ) : (
@@ -1132,6 +1245,7 @@ export function CreatePage() {
                             draggable
                             onDragStart={() => handleDragStart(item, tier.id)}
                             onDragEnd={handleDragEnd}
+                            pointerDragHandlers={getPointerDragHandlers(item, tier.id)}
                             onRemove={() => removeFromTier(item, tier.id)}
                           />
                         ),
@@ -1192,6 +1306,7 @@ export function CreatePage() {
             )}
 
             <div
+              data-rank-drop-zone="unranked"
               className={`min-h-[52px] rounded-xl border-2 border-dashed p-2 transition-colors ${
                 dragOverId === "unranked" ? "border-gray-400 bg-gray-100" : "border-gray-200 bg-white"
               }`}
@@ -1215,6 +1330,7 @@ export function CreatePage() {
                       draggable
                       onDragStart={() => handleDragStart(item, null)}
                       onDragEnd={handleDragEnd}
+                      pointerDragHandlers={getPointerDragHandlers(item, null)}
                       onRemove={() => removeItem(item.id)}
                     />
                   ) : (
@@ -1224,6 +1340,7 @@ export function CreatePage() {
                       draggable
                       onDragStart={() => handleDragStart(item, null)}
                       onDragEnd={handleDragEnd}
+                      pointerDragHandlers={getPointerDragHandlers(item, null)}
                       onRemove={() => removeItem(item.id)}
                     />
                   ),
@@ -1235,9 +1352,28 @@ export function CreatePage() {
               </div>
             </div>
             <p className="mt-2 text-xs text-gray-400">
-              Drag items into tiers · Drag between tiers to re-rank · Click a tier label to rename · × to remove an item
+              Drag items into tiers · On mobile, press and drag with one finger · Click a tier label to rename · × to remove an item
             </p>
           </div>
+
+          {pointerDrag && (
+            <div
+              className="pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-gray-800 shadow-2xl"
+              style={{ left: pointerDrag.x, top: pointerDrag.y }}
+            >
+              {itemFormat === "image" && pointerDrag.item.imageUrl ? (
+                <div className="flex items-center gap-2">
+                  <img src={pointerDrag.item.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                  <span>{pointerDrag.item.name}</span>
+                </div>
+              ) : (
+                <span>
+                  {pointerDrag.item.emoji ? `${pointerDrag.item.emoji} ` : ""}
+                  {pointerDrag.item.name}
+                </span>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2">
             <button
