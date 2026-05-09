@@ -10,9 +10,22 @@ import { ensureMockSession, fetchCurrentUserProfile, updateCurrentUserProfile, u
 function isSupportedAvatarUrl(value: string) {
   try {
     const url = new URL(value);
+    const configuredApiURL = process.env.NEXT_PUBLIC_RANKSTER_API_URL;
+    let configuredApiHost = "";
+    try {
+      configuredApiHost = configuredApiURL ? new URL(configuredApiURL).host : "";
+    } catch {
+      configuredApiHost = "";
+    }
+
     return (
       (url.protocol === "http:" && (url.host === "localhost:8000" || url.host === "127.0.0.1:8000")) ||
-      (url.protocol === "https:" && (url.hostname === "lh3.googleusercontent.com" || url.hostname === "images.unsplash.com"))
+      (url.protocol === "https:" &&
+        (url.hostname === "lh3.googleusercontent.com" ||
+          url.hostname === "images.unsplash.com" ||
+          url.hostname === "rankster-backend.onrender.com" ||
+          url.hostname === "res.cloudinary.com" ||
+          url.host === configuredApiHost))
     );
   } catch {
     return false;
@@ -109,7 +122,7 @@ export default function EditProfilePage() {
       return;
     }
     if (!isSupportedAvatarUrl(nextAvatarUrl)) {
-      setError("Use an uploaded image, Google avatar, Unsplash image, or localhost backend image URL.");
+      setError("Use an uploaded image, Google avatar, Cloudinary image, Unsplash image, or backend image URL.");
       return;
     }
     setAvatarUrl(nextAvatarUrl);
