@@ -24,6 +24,12 @@ export interface TierData {
   D: TierItem[];
 }
 
+export interface TierRow {
+  id: string;
+  label: string;
+  items: TierItem[];
+}
+
 export interface Comment {
   id: string;
   user: User;
@@ -39,6 +45,7 @@ export interface RankPost {
   category: string;
   coverImage: string;
   tiers: TierData;
+  tierRows?: TierRow[];
   allItems: TierItem[];
   description: string;
   tags: string[];

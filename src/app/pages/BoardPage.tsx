@@ -104,7 +104,7 @@ export function BoardPage() {
                     </div>
                   </div>
                   <div className="p-3">
-                    <TierListDisplay tiers={post.tiers} compact />
+                    <TierListDisplay tiers={post.tiers} tierRows={post.tierRows} compact />
                     <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
                       <span className="flex items-center gap-1">
                         <Heart size={12} className="text-red-400" />

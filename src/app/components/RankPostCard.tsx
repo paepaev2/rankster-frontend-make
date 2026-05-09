@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronDown, ChevronUp, Loader2, Download, Check } from "lucide-react";
-import type { Comment as RankPostComment, RankPost, User } from "../lib/feedUi";
+import type { Comment as RankPostComment, RankPost, TierRow, User } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
@@ -94,9 +94,22 @@ const TIER_HEX: Record<string, string> = {
   C: "#16a34a",
   D: "#2563eb",
 };
+const TIER_HEX_SEQUENCE = ["#ef4444", "#f97316", "#d97706", "#16a34a", "#2563eb", "#8b5cf6", "#ec4899", "#14b8a6"];
 
 const FONT = (size: number, weight: "normal" | "bold" = "normal") =>
   `${weight === "bold" ? "bold " : ""}${size}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+
+function displayTierRows(post: RankPost): TierRow[] {
+  if (post.tierRows && post.tierRows.length > 0) {
+    return post.tierRows;
+  }
+  return (["S", "A", "B", "C", "D"] as const).map((tier) => ({ id: tier, label: tier, items: post.tiers[tier] }));
+}
+
+function tierRowColor(row: TierRow, index: number) {
+  const key = row.id in TIER_HEX ? row.id : row.label.trim().toUpperCase();
+  return TIER_HEX[key] ?? TIER_HEX_SEQUENCE[index % TIER_HEX_SEQUENCE.length];
+}
 
 async function generateStoryImage(post: RankPost): Promise<Blob> {
   const W = 1080, H = 1920;
@@ -144,8 +157,7 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
   const CARD_X = 60, CARD_Y = 240, CARD_W = 960, CARD_R = 40;
 
   // Dynamically compute card height based on tier count
-  const TIER_KEYS = ["S", "A", "B", "C", "D"] as const;
-  const activeTiers = TIER_KEYS.filter((k) => post.tiers[k]?.length > 0);
+  const activeTiers = displayTierRows(post).filter((row) => row.items.length > 0);
   const TIER_ROW_H = 96, TIER_GAP = 14;
   const tierBlockH = activeTiers.length * TIER_ROW_H + (activeTiers.length - 1) * TIER_GAP;
   const BANNER_H = 380;
@@ -234,26 +246,27 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
   curY += 48;
 
   // ── Tier rows ────────────────────────────────────────────────────────────────
-  for (const tier of TIER_KEYS) {
-    const items = post.tiers[tier] ?? [];
+  for (const [tierIndex, row] of activeTiers.entries()) {
+    const items = row.items;
     if (items.length === 0) continue;
 
     const rowX = CARD_X + 40;
     const rowW = CARD_W - 80;
-    const labelW = 80;
+    const rowLabel = row.label || row.id;
+    const labelW = rowLabel.length > 2 ? 150 : 80;
     const itemsX = rowX + labelW + 12;
     const itemsW = rowW - labelW - 12;
 
     // Tier label box
-    const color = TIER_HEX[tier] ?? "#6b7280";
+    const color = tierRowColor(row, tierIndex);
     ctx.fillStyle = color;
     roundRect(ctx, rowX, curY, labelW, TIER_ROW_H, { tl: 16, tr: 0, bl: 16, br: 0 });
     ctx.fill();
 
     ctx.fillStyle = "#ffffff";
-    ctx.font = FONT(52, "bold");
+    ctx.font = FONT(rowLabel.length > 2 ? 26 : 52, "bold");
     ctx.textAlign = "center";
-    ctx.fillText(tier, rowX + labelW / 2, curY + TIER_ROW_H / 2 + 18);
+    wrapText(ctx, rowLabel, rowX + labelW / 2, curY + (rowLabel.length > 2 ? 38 : TIER_ROW_H / 2 + 18), labelW - 16, 30, 2);
 
     // Items area
     ctx.fillStyle = "#f9fafb"; // gray-50
@@ -330,6 +343,7 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 type ShareState = "idle" | "generating" | "done" | "error";
+type ShareToastKind = "share-sheet" | "download" | "error";
 
 export function RankPostCard({
   post: initialPost,
@@ -367,6 +381,7 @@ export function RankPostCard({
   const [shareOpen, setShareOpen] = useState(false);
   const [igState, setIgState] = useState<ShareState>("idle");
   const [igToast, setIgToast] = useState<string | null>(null);
+  const [igToastKind, setIgToastKind] = useState<ShareToastKind>("share-sheet");
 
   const category = CATEGORIES.find((c) => c.id === post.category);
 
@@ -396,13 +411,14 @@ export function RankPostCard({
     setShareOpen(false);
     setIgState("generating");
     setIgToast(null);
+    setIgToastKind("share-sheet");
 
     try {
       const blob = await generateStoryImage(post);
       const file = new File([blob], "rankster-story.png", { type: "image/png" });
 
-      // Mobile path — Web Share API with files (iOS Safari / Android Chrome)
-      // The system share sheet includes Instagram Stories as a target
+      // Mobile path: the browser can hand the image to the OS share sheet.
+      // Instagram appears only when the device/browser exposes it as a share target.
       if (
         typeof navigator !== "undefined" &&
         navigator.share &&
@@ -411,7 +427,12 @@ export function RankPostCard({
       ) {
         await navigator.share({ files: [file] });
         setIgState("done");
-        setTimeout(() => setIgState("idle"), 3000);
+        setIgToastKind("share-sheet");
+        setIgToast("Share sheet opened. If Instagram is available there, choose it to add the image to a story; otherwise save the image from the sheet.");
+        setTimeout(() => {
+          setIgState("idle");
+          setIgToast(null);
+        }, 7000);
         return;
       }
 
@@ -426,7 +447,8 @@ export function RankPostCard({
       URL.revokeObjectURL(url);
 
       setIgState("done");
-      setIgToast("Image saved! Open Instagram → Stories → Gallery icon, then select rankster-story.png");
+      setIgToastKind("download");
+      setIgToast("Story image downloaded. Open Instagram, start a story, tap the gallery picker, and choose rankster-story.png.");
       setTimeout(() => {
         setIgState("idle");
         setIgToast(null);
@@ -438,6 +460,7 @@ export function RankPostCard({
       } else {
         console.error("Instagram share failed:", err);
         setIgState("error");
+        setIgToastKind("error");
         setIgToast("Couldn't generate the share image. Try again.");
         setTimeout(() => {
           setIgState("idle");
@@ -487,6 +510,7 @@ export function RankPostCard({
           .map((tag) => tag.trim().replace(/^#/, ""))
           .filter(Boolean),
         tiers: post.tiers,
+        tierRows: post.tierRows,
         allItems: post.allItems,
         isPublic: editIsPublic,
       });
@@ -781,7 +805,7 @@ export function RankPostCard({
 
       {/* Tier List */}
       <div className="px-4 pt-3">
-        <TierListDisplay tiers={post.tiers} compact={!expanded} />
+        <TierListDisplay tiers={post.tiers} tierRows={post.tierRows} compact={!expanded} />
         {!expanded && (
           <button
             onClick={() => setExpanded(true)}
@@ -833,7 +857,7 @@ export function RankPostCard({
           <Loader2 size={18} className="text-pink-500 animate-spin flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-gray-800">Creating story card…</p>
-            <p className="text-xs text-gray-400">Drawing your tier list onto an IG story canvas</p>
+            <p className="text-xs text-gray-400">Drawing your tier list as a story-sized image</p>
           </div>
         </div>
       )}
@@ -845,7 +869,9 @@ export function RankPostCard({
             ? "bg-red-50 border-red-100"
             : "bg-gradient-to-r from-pink-50 to-purple-50 border-pink-100"
         }`}>
-          {igState === "done" ? (
+          {igState === "done" && igToastKind === "share-sheet" ? (
+            <Check size={18} className="text-pink-500 flex-shrink-0 mt-0.5" />
+          ) : igState === "done" && igToastKind === "download" ? (
             <Download size={18} className="text-pink-500 flex-shrink-0 mt-0.5" />
           ) : (
             <span className="text-base flex-shrink-0">⚠️</span>
@@ -857,7 +883,7 @@ export function RankPostCard({
       {igState === "done" && !igToast && (
         <div className="mx-4 mt-3 flex items-center gap-2 px-4 py-2.5 bg-green-50 rounded-xl border border-green-100">
           <Check size={16} className="text-green-500 flex-shrink-0" />
-          <p className="text-sm text-green-700 font-medium">Shared to Instagram Stories!</p>
+          <p className="text-sm text-green-700 font-medium">Story image is ready to share.</p>
         </div>
       )}
 
@@ -896,8 +922,13 @@ export function RankPostCard({
                   className="fixed inset-0 z-10"
                   onClick={() => setShareOpen(false)}
                 />
-                <div className="absolute bottom-8 left-0 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 min-w-[200px] z-20 overflow-hidden">
-        
+                <div className="absolute bottom-8 left-0 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 min-w-[240px] z-20 overflow-hidden">
+                  <div className="px-3 py-2">
+                    <p className="text-xs font-semibold text-gray-900">Share this ranking</p>
+                    <p className="mt-0.5 text-[11px] leading-snug text-gray-400">
+                      Instagram opens only if your mobile share sheet offers it; otherwise we save the story image.
+                    </p>
+                  </div>
 
                   <div className="h-px bg-gray-100 my-1" />
 
@@ -918,8 +949,11 @@ export function RankPostCard({
                     ) : (
                       <span className="text-lg leading-none">📸</span>
                     )}
-                    <span>
-                      {igState === "generating" ? "Generating…" : "Share to Instagram"}
+                    <span className="flex min-w-0 flex-col">
+                      <span>{igState === "generating" ? "Generating…" : "Share story image"}</span>
+                      {igState !== "generating" && (
+                        <span className="text-[11px] font-normal leading-tight text-gray-400">Use share sheet or download fallback</span>
+                      )}
                     </span>
                   </button>
                   <button

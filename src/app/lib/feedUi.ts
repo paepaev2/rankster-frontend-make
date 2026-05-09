@@ -25,6 +25,12 @@ export interface TierData {
   D: TierItem[];
 }
 
+export interface TierRow {
+  id: string;
+  label: string;
+  items: TierItem[];
+}
+
 export interface Comment {
   id: string;
   user: User;
@@ -41,6 +47,7 @@ export interface RankPost {
   category: string;
   coverImage: string;
   tiers: TierData;
+  tierRows?: TierRow[];
   allItems: TierItem[];
   description: string;
   tags: string[];
@@ -179,12 +186,13 @@ export interface CreateRankInput {
   description: string;
   tags: string[];
   tiers: TierData;
+  tierRows?: TierRow[];
   allItems: TierItem[];
   isPublic: boolean;
   sourcePostId?: string;
 }
 
-export type UpdateRankPostInput = Pick<CreateRankInput, "title" | "category" | "description" | "tags" | "tiers" | "allItems" | "isPublic">;
+export type UpdateRankPostInput = Pick<CreateRankInput, "title" | "category" | "description" | "tags" | "tiers" | "tierRows" | "allItems" | "isPublic">;
 
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   S: { bg: "bg-red-500", text: "text-white", border: "border-red-600" },

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
-import type { RankPost, TierData, TierItem as FeedTierItem, TrendingTopic } from "../lib/feedUi";
+import type { RankPost, TierData, TierItem as FeedTierItem, TierRow, TrendingTopic } from "../lib/feedUi";
 import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost, uploadImage } from "../lib/ranksterApi";
 
 type Mode = "choose" | "create-new" | "rank-existing";
@@ -42,12 +42,14 @@ const TIER_COLOR_PALETTE = [
 ];
 
 const DEFAULT_TIERS: Tier[] = [
-  { id: "tier_S", label: "S", items: [] },
-  { id: "tier_A", label: "A", items: [] },
-  { id: "tier_B", label: "B", items: [] },
-  { id: "tier_C", label: "C", items: [] },
-  { id: "tier_D", label: "D", items: [] },
+  { id: "S", label: "S", items: [] },
+  { id: "A", label: "A", items: [] },
+  { id: "B", label: "B", items: [] },
+  { id: "C", label: "C", items: [] },
+  { id: "D", label: "D", items: [] },
 ];
+
+const LEGACY_TIER_KEYS = ["S", "A", "B", "C", "D"] as const;
 
 function createDefaultTiers(): Tier[] {
   return DEFAULT_TIERS.map((tier) => ({ ...tier, items: [] }));
@@ -56,7 +58,9 @@ function createDefaultTiers(): Tier[] {
 function mapPostItems(post: RankPost): TierItem[] {
   const itemsById = new Map<string, TierItem>();
 
-  [...post.allItems, ...Object.values(post.tiers).flat()].forEach((item) => {
+  const rowItems = post.tierRows?.flatMap((row) => row.items) ?? [];
+
+  [...post.allItems, ...rowItems, ...Object.values(post.tiers).flat()].forEach((item) => {
     itemsById.set(item.id, {
       id: item.id,
       name: item.name,
@@ -77,13 +81,19 @@ function mapPostTierData(post: RankPost): Tier[] {
       imageUrl: item.imageUrl,
     }));
 
-  return [
-    { id: "tier_S", label: "S", items: toTierItems(post.tiers.S) },
-    { id: "tier_A", label: "A", items: toTierItems(post.tiers.A) },
-    { id: "tier_B", label: "B", items: toTierItems(post.tiers.B) },
-    { id: "tier_C", label: "C", items: toTierItems(post.tiers.C) },
-    { id: "tier_D", label: "D", items: toTierItems(post.tiers.D) },
-  ];
+  if (post.tierRows && post.tierRows.length > 0) {
+    return post.tierRows.map((row) => ({
+      id: row.id,
+      label: row.label,
+      items: toTierItems(row.items),
+    }));
+  }
+
+  return LEGACY_TIER_KEYS.map((tier) => ({
+    id: tier,
+    label: tier,
+    items: toTierItems(post.tiers[tier]),
+  }));
 }
 
 function buildTierPayload(tiers: Tier[]): TierData {
@@ -95,13 +105,27 @@ function buildTierPayload(tiers: Tier[]): TierData {
       imageUrl: item.imageUrl,
     }));
 
-  return {
-    S: toFeedItems(tiers[0]?.items),
-    A: toFeedItems(tiers[1]?.items),
-    B: toFeedItems(tiers[2]?.items),
-    C: toFeedItems(tiers[3]?.items),
-    D: toFeedItems(tiers[4]?.items),
-  };
+  return LEGACY_TIER_KEYS.reduce<TierData>(
+    (payload, key, index) => {
+      const directMatch = tiers.find((tier) => tier.id === key || tier.label.trim().toUpperCase() === key);
+      payload[key] = toFeedItems((directMatch ?? tiers[index])?.items);
+      return payload;
+    },
+    { S: [], A: [], B: [], C: [], D: [] },
+  );
+}
+
+function buildTierRowsPayload(tiers: Tier[]): TierRow[] {
+  return tiers.map((tier, index) => ({
+    id: tier.id || `tier-${index + 1}`,
+    label: tier.label.trim() || tier.id || `Tier ${index + 1}`,
+    items: tier.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      emoji: item.emoji,
+      imageUrl: item.imageUrl,
+    })),
+  }));
 }
 
 function TextChip({
@@ -173,7 +197,7 @@ function ImageChip({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       {...pointerDragHandlers}
-      className={`relative flex w-16 select-none flex-col items-center ${
+      className={`relative flex w-16 flex-shrink-0 select-none flex-col items-center overflow-hidden ${
         isDraggable ? "cursor-grab touch-none active:cursor-grabbing active:opacity-50" : ""
       }`}
     >
@@ -186,7 +210,7 @@ function ImageChip({
           </div>
         )}
       </div>
-      <span className="mt-0.5 max-w-[56px] text-center text-[10px] font-medium leading-tight text-gray-600 line-clamp-2">
+      <span className="mt-0.5 max-w-[56px] overflow-hidden break-words text-center text-[10px] font-medium leading-tight text-gray-600 line-clamp-2">
         {item.name}
       </span>
       {removable && onRemove && (
@@ -225,7 +249,7 @@ function TierImageChip({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       {...pointerDragHandlers}
-      className="relative flex w-12 cursor-grab touch-none select-none flex-col items-center active:cursor-grabbing active:opacity-50"
+      className="relative flex w-12 flex-shrink-0 cursor-grab touch-none select-none flex-col items-center overflow-hidden active:cursor-grabbing active:opacity-50"
     >
       <div className="h-10 w-10 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 shadow-sm">
         {item.imageUrl ? (
@@ -236,7 +260,7 @@ function TierImageChip({
           </div>
         )}
       </div>
-      <span className="mt-0.5 max-w-[44px] text-center text-[9px] font-medium leading-tight text-gray-600 line-clamp-2">
+      <span className="mt-0.5 max-w-[44px] overflow-hidden break-words text-center text-[9px] font-medium leading-tight text-gray-600 line-clamp-2">
         {item.name}
       </span>
       {onRemove && (
@@ -281,10 +305,12 @@ function RankAddItemRow({
   onNameChange,
   onAddItem,
 }: RankAddItemRowProps) {
+  const isImageFormat = itemFormat === "image";
+
   return (
     <div className="space-y-2 rounded-xl border border-gray-100 bg-white p-3 shadow-sm">
-      <div className="flex gap-2">
-        {itemFormat === "text" ? (
+      <div className={isImageFormat ? "flex flex-col gap-2 sm:flex-row" : "flex gap-2"}>
+        {!isImageFormat ? (
           <input
             type="text"
             value={rankNewEmoji}
@@ -293,7 +319,7 @@ function RankAddItemRow({
             className="w-12 rounded-lg border border-gray-100 bg-gray-50 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
           />
         ) : (
-          <div className="flex flex-1 gap-2">
+          <div className="flex min-w-0 flex-1 gap-2">
             <input
               type="text"
               value={rankNewImageUrl}
@@ -301,7 +327,7 @@ function RankAddItemRow({
               placeholder="Image URL"
               className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
             />
-            <label className="flex cursor-pointer items-center rounded-lg border border-violet-100 bg-violet-50 px-2 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-100">
+            <label className="flex flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-violet-100 bg-violet-50 px-3 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-100">
               {isUploadingImage ? "..." : "Upload"}
               <input
                 type="file"
@@ -319,20 +345,22 @@ function RankAddItemRow({
             </label>
           </div>
         )}
-        <input
-          type="text"
-          value={rankNewName}
-          onChange={(event) => onNameChange(event.target.value)}
-          onKeyDown={(event) => event.key === "Enter" && onAddItem()}
-          placeholder="Item name"
-          className="flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
-        />
-        <button
-          onClick={onAddItem}
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white transition-colors hover:bg-violet-600"
-        >
-          <Plus size={16} />
-        </button>
+        <div className="flex min-w-0 flex-1 gap-2">
+          <input
+            type="text"
+            value={rankNewName}
+            onChange={(event) => onNameChange(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && onAddItem()}
+            placeholder="Item name"
+            className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+          />
+          <button
+            onClick={onAddItem}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white transition-colors hover:bg-violet-600"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -738,6 +766,7 @@ export function CreatePage() {
         description,
         tags: selectedSourceTags.length > 0 ? selectedSourceTags : [],
         tiers: buildTierPayload(tiers),
+        tierRows: buildTierRowsPayload(tiers),
         allItems: items.map((item) => ({
           id: item.id,
           name: item.name,
@@ -1227,7 +1256,7 @@ export function CreatePage() {
                       )}
                     </div>
 
-                    <div className={`flex min-h-[56px] flex-1 flex-wrap gap-1.5 p-2 ${itemFormat === "image" ? "items-start" : "items-center"}`}>
+                    <div className={`flex min-h-[56px] min-w-0 flex-1 flex-wrap gap-1.5 overflow-hidden p-2 ${itemFormat === "image" ? "items-start content-start" : "items-center"}`}>
                       {tier.items.map((item) =>
                         itemFormat === "image" ? (
                           <TierImageChip
@@ -1307,7 +1336,7 @@ export function CreatePage() {
 
             <div
               data-rank-drop-zone="unranked"
-              className={`min-h-[52px] rounded-xl border-2 border-dashed p-2 transition-colors ${
+              className={`min-h-[52px] overflow-hidden rounded-xl border-2 border-dashed p-2 transition-colors ${
                 dragOverId === "unranked" ? "border-gray-400 bg-gray-100" : "border-gray-200 bg-white"
               }`}
               onDragOver={(event) => {
@@ -1321,7 +1350,7 @@ export function CreatePage() {
               }}
               onDrop={handleDropOnUnranked}
             >
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-w-0 flex-wrap gap-2 overflow-hidden">
                 {getUnrankedItems().map((item) =>
                   itemFormat === "image" ? (
                     <ImageChip
@@ -1358,13 +1387,13 @@ export function CreatePage() {
 
           {pointerDrag && (
             <div
-              className="pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-gray-800 shadow-2xl"
+              className="pointer-events-none fixed z-[70] max-w-[80vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-gray-800 shadow-2xl"
               style={{ left: pointerDrag.x, top: pointerDrag.y }}
             >
               {itemFormat === "image" && pointerDrag.item.imageUrl ? (
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <img src={pointerDrag.item.imageUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
-                  <span>{pointerDrag.item.name}</span>
+                  <span className="truncate">{pointerDrag.item.name}</span>
                 </div>
               ) : (
                 <span>
