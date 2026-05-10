@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
 import { TierListDisplay } from "../components/TierListDisplay";
-import type { Category, ProfileResponse, RankPost } from "../lib/feedUi";
+import { hasUsableCoverImage, type Category, type ProfileResponse, type RankPost } from "../lib/feedUi";
 import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
 import { useSaved } from "../lib/savedContext";
 import {
@@ -371,6 +371,7 @@ export function ProfilePage() {
               sortedPosts.map((post) => {
                 const isPinned = pinnedPostId === post.id;
                 const category = categoryMap.get(post.category);
+                const hasCoverImage = hasUsableCoverImage(post.coverImage);
                 return (
                   <div
                     key={post.id}
@@ -385,16 +386,27 @@ export function ProfilePage() {
                       </div>
                     ) : null}
                     <div className="relative">
-                      <div className="relative h-28 w-full">
-                        <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 448px" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                      </div>
-                      <div className="absolute bottom-0 left-0 p-3">
-                        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white/70">
-                          {category?.emoji} {category?.name}
-                        </span>
-                        <h3 className="mt-1 text-sm font-bold text-white">{post.title}</h3>
-                      </div>
+                      {hasCoverImage ? (
+                        <>
+                          <div className="relative h-28 w-full">
+                            <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 448px" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                          </div>
+                          <div className="absolute bottom-0 left-0 p-3">
+                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white/70">
+                              {category?.emoji} {category?.name}
+                            </span>
+                            <h3 className="mt-1 text-sm font-bold text-white">{post.title}</h3>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="border-b border-gray-100 bg-gradient-to-br from-brand-blue/10 via-white to-brand-yellow/20 p-3">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] ${category?.color || "bg-gray-100 text-gray-500"}`}>
+                            {category?.emoji} {category?.name}
+                          </span>
+                          <h3 className="mt-1.5 text-sm font-black text-gray-900">{post.title}</h3>
+                        </div>
+                      )}
                       {isMe ? (
                         <button
                           onClick={() => void handlePinToggle(post.id)}
@@ -436,34 +448,40 @@ export function ProfilePage() {
           ) : (
             <div className="space-y-3">
               <p className="text-xs text-gray-400 font-medium">{savedPosts.length} saved</p>
-              {savedPosts.map((post) => (
-                <div
-                  key={post.id}
-                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3"
-                >
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                    <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="64px" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">by @{post.user.username}</p>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                        <Heart size={11} className="text-red-400" />
-                        {(post.likes / 1000).toFixed(1)}k
-                      </span>
-                      <span className="text-xs text-gray-400">{post.createdAt}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => toggleSave(post)}
-                    className="flex-shrink-0 self-center text-brand-blue hover:text-brand-blue-dark transition-colors p-1"
-                    title="Remove from saved"
+              {savedPosts.map((post) => {
+                const hasCoverImage = hasUsableCoverImage(post.coverImage);
+
+                return (
+                  <div
+                    key={post.id}
+                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3"
                   >
-                    <Bookmark size={18} className="fill-brand-blue" />
-                  </button>
-                </div>
-              ))}
+                    {hasCoverImage ? (
+                      <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
+                        <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="64px" />
+                      </div>
+                    ) : null}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
+                      <p className="text-xs text-gray-400 mt-0.5">by @{post.user.username}</p>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                          <Heart size={11} className="text-red-400" />
+                          {(post.likes / 1000).toFixed(1)}k
+                        </span>
+                        <span className="text-xs text-gray-400">{post.createdAt}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleSave(post)}
+                      className="flex-shrink-0 self-center text-brand-blue hover:text-brand-blue-dark transition-colors p-1"
+                      title="Remove from saved"
+                    >
+                      <Bookmark size={18} className="fill-brand-blue" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )
         ) : null}

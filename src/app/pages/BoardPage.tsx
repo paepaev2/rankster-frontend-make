@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pin, Trophy, TrendingUp, Users, Heart, BarChart2, Lock, Globe } from "lucide-react";
 import { MY_RANKINGS, USERS, MOCK_POSTS } from "../data/mockData";
 import { TierListDisplay } from "../components/TierListDisplay";
+import { hasUsableCoverImage } from "../lib/feedUi";
 
 const STAT_TABS = ["Rankings", "Liked", "Stats"];
 
@@ -88,47 +89,59 @@ export function BoardPage() {
                 <Pin size={13} className="text-brand-blue" />
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pinned</span>
               </div>
-              {myPosts.slice(0, 1).map((post) => (
-                <div key={post.id} className="bg-white rounded-2xl overflow-hidden border-2 border-brand-blue/25 shadow-sm">
-                  <div className="relative">
-                    <img src={post.coverImage} alt={post.title} className="w-full h-28 object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                    <div className="absolute bottom-0 left-0 p-3">
-                      <h3 className="text-white font-bold text-sm">{post.title}</h3>
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <span className="bg-brand-blue/100 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Pin size={9} />
-                        Pinned
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <TierListDisplay tiers={post.tiers} tierRows={post.tierRows} compact />
-                    <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <Heart size={12} className="text-red-400" />
-                        {(post.likes / 1000).toFixed(1)}k
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users size={12} className="text-brand-blue/70" />
-                        {(post.participantCount / 1000).toFixed(1)}k ranked
-                      </span>
-                      {post.isPublic ? (
-                        <span className="flex items-center gap-1 text-green-500">
-                          <Globe size={12} />
-                          Public
-                        </span>
+              {myPosts.slice(0, 1).map((post) => {
+                const hasCoverImage = hasUsableCoverImage(post.coverImage);
+
+                return (
+                  <div key={post.id} className="bg-white rounded-2xl overflow-hidden border-2 border-brand-blue/25 shadow-sm">
+                    <div className="relative">
+                      {hasCoverImage ? (
+                        <>
+                          <img src={post.coverImage} alt={post.title} className="w-full h-28 object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                          <div className="absolute bottom-0 left-0 p-3">
+                            <h3 className="text-white font-bold text-sm">{post.title}</h3>
+                          </div>
+                        </>
                       ) : (
-                        <span className="flex items-center gap-1">
-                          <Lock size={12} />
-                          Private
-                        </span>
+                        <div className="bg-gradient-to-br from-brand-blue/10 via-white to-brand-yellow/20 p-3">
+                          <h3 className="text-sm font-black text-gray-900">{post.title}</h3>
+                        </div>
                       )}
+                      <div className="absolute top-2 right-2">
+                        <span className="bg-brand-blue/100 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <Pin size={9} />
+                          Pinned
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <TierListDisplay tiers={post.tiers} tierRows={post.tierRows} compact />
+                      <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <Heart size={12} className="text-red-400" />
+                          {(post.likes / 1000).toFixed(1)}k
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users size={12} className="text-brand-blue/70" />
+                          {(post.participantCount / 1000).toFixed(1)}k ranked
+                        </span>
+                        {post.isPublic ? (
+                          <span className="flex items-center gap-1 text-green-500">
+                            <Globe size={12} />
+                            Public
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Lock size={12} />
+                            Private
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* All Rankings */}
@@ -143,31 +156,37 @@ export function BoardPage() {
                 </button>
               </div>
               <div className="space-y-3">
-                {myPosts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3"
-                  >
-                    <img src={post.coverImage} alt={post.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
-                      <p className="text-xs text-gray-400 mt-0.5">{post.createdAt}</p>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                          <Heart size={11} className="text-red-400" />
-                          {(post.likes / 1000).toFixed(1)}k
-                        </span>
-                        <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                          <Users size={11} className="text-brand-blue/70" />
-                          {(post.participantCount / 1000).toFixed(1)}k
-                        </span>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${post.isPublic ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-                          {post.isPublic ? "Public" : "Private"}
-                        </span>
+                {myPosts.map((post) => {
+                  const hasCoverImage = hasUsableCoverImage(post.coverImage);
+
+                  return (
+                    <div
+                      key={post.id}
+                      className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3"
+                    >
+                      {hasCoverImage ? (
+                        <img src={post.coverImage} alt={post.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                      ) : null}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{post.createdAt}</p>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                            <Heart size={11} className="text-red-400" />
+                            {(post.likes / 1000).toFixed(1)}k
+                          </span>
+                          <span className="text-xs text-gray-500 flex items-center gap-0.5">
+                            <Users size={11} className="text-brand-blue/70" />
+                            {(post.participantCount / 1000).toFixed(1)}k
+                          </span>
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${post.isPublic ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                            {post.isPublic ? "Public" : "Private"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <button
                   onClick={() => router.push("/create")}
                   className="w-full border-2 border-dashed border-brand-blue/25 rounded-2xl py-6 flex flex-col items-center gap-1.5 text-brand-blue/70 hover:border-brand-blue/55 hover:text-brand-blue transition-all"
@@ -184,22 +203,28 @@ export function BoardPage() {
         {activeTab === "Liked" && (
           <div className="space-y-3">
             <p className="text-xs text-gray-400">{likedPosts.length} liked tier lists</p>
-            {likedPosts.map((post) => (
-              <div key={post.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3">
-                <img src={post.coverImage} alt={post.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
-                  <p className="text-xs text-gray-400 mt-0.5">by @{post.user.username}</p>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-xs text-red-500 flex items-center gap-0.5">
-                      <Heart size={11} className="fill-red-500" />
-                      {(post.likes / 1000).toFixed(1)}k
-                    </span>
-                    <span className="text-xs text-gray-400">{post.createdAt}</span>
+            {likedPosts.map((post) => {
+              const hasCoverImage = hasUsableCoverImage(post.coverImage);
+
+              return (
+                <div key={post.id} className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3">
+                  {hasCoverImage ? (
+                    <img src={post.coverImage} alt={post.title} className="w-16 h-16 rounded-xl object-cover flex-shrink-0" />
+                  ) : null}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm text-gray-900 truncate">{post.title}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">by @{post.user.username}</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-xs text-red-500 flex items-center gap-0.5">
+                        <Heart size={11} className="fill-red-500" />
+                        {(post.likes / 1000).toFixed(1)}k
+                      </span>
+                      <span className="text-xs text-gray-400">{post.createdAt}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

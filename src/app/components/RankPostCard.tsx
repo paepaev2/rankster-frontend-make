@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import Image from "next/image";
 import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Users, ChevronDown, ChevronUp, Loader2, Download, Check } from "lucide-react";
-import type { Comment as RankPostComment, RankPost, TierRow, User } from "../lib/feedUi";
+import { hasUsableCoverImage, type Comment as RankPostComment, type RankPost, type TierRow, type User } from "../lib/feedUi";
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
@@ -394,6 +394,7 @@ export function RankPostCard({
   const [igToastKind, setIgToastKind] = useState<ShareToastKind>("share-sheet");
 
   const category = CATEGORIES.find((c) => c.id === post.category);
+  const hasCoverImage = hasUsableCoverImage(post.coverImage);
 
   useEffect(() => {
     setPost(initialPost);
@@ -825,23 +826,36 @@ export function RankPostCard({
 
       {/* Cover Image & Title */}
       <button onClick={() => onTopicClick?.(post.id)} className="w-full text-left">
-        <div className="relative">
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            width={720}
-            height={288}
-            className="h-36 w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="text-white font-bold text-base leading-tight">{post.title}</h3>
-            <div className="flex items-center gap-1 mt-1">
-              <Users size={11} className="text-white/70" />
-              <span className="text-white/70 text-xs">{formatCount(post.participantCount)} ranked this</span>
+        {hasCoverImage ? (
+          <div className="relative">
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              width={720}
+              height={288}
+              className="h-36 w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <h3 className="text-white font-bold text-base leading-tight">{post.title}</h3>
+              <div className="flex items-center gap-1 mt-1">
+                <Users size={11} className="text-white/70" />
+                <span className="text-white/70 text-xs">{formatCount(post.participantCount)} ranked this</span>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="mx-4 rounded-2xl border border-brand-blue/10 bg-gradient-to-br from-brand-blue/10 via-white to-brand-yellow/20 p-4">
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${category?.color || "bg-gray-100 text-gray-600"}`}>
+              {category?.emoji} {category?.name}
+            </span>
+            <h3 className="mt-2 text-base font-black leading-tight text-gray-900">{post.title}</h3>
+            <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+              <Users size={12} className="text-brand-blue/70" />
+              <span>{formatCount(post.participantCount)} ranked this</span>
+            </div>
+          </div>
+        )}
       </button>
 
       {/* Tier List */}

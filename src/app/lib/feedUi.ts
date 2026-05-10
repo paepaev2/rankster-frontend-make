@@ -130,6 +130,20 @@ export interface TrendingTopic {
   tags: string[];
 }
 
+export function hasUsableCoverImage(src?: string | null): src is string {
+  const value = src?.trim();
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const { pathname } = new URL(value, "https://rankster.local");
+    return !/^\/assets\/ranks\/[^/]+\.svg$/i.test(pathname);
+  } catch {
+    return !/\/assets\/ranks\/[^/]+\.svg$/i.test(value);
+  }
+}
+
 export interface Category {
   id: string;
   name: string;

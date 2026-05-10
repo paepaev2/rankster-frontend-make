@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
-import type { RankPost, TierData, TierItem as FeedTierItem, TierRow, TrendingTopic } from "../lib/feedUi";
+import { hasUsableCoverImage, type RankPost, type TierData, type TierItem as FeedTierItem, type TierRow, type TrendingTopic } from "../lib/feedUi";
 import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost, uploadImage } from "../lib/ranksterApi";
 
 type Mode = "choose" | "create-new" | "rank-existing";
@@ -845,22 +845,32 @@ export function CreatePage() {
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-gray-500">Hot Right Now 🔥</h2>
             {topicsError && <p className="mb-2 text-xs text-red-500">{topicsError}</p>}
             <div className="space-y-2">
-              {trendingTopics.slice(0, 3).map((topic) => (
-                <button
-                  key={topic.id}
-                  onClick={() => {
-                    void loadSourcePost(topic.postId ?? topic.id);
-                  }}
-                  className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25"
-                >
-                  <img src={topic.coverImage} alt={topic.title} className="h-10 w-10 rounded-lg object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-gray-900">{topic.title}</p>
-                    <p className="text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k ranked this</p>
-                  </div>
-                  <ChevronRight size={16} className="flex-shrink-0 text-gray-400" />
-                </button>
-              ))}
+              {trendingTopics.slice(0, 3).map((topic) => {
+                const hasCoverImage = hasUsableCoverImage(topic.coverImage);
+
+                return (
+                  <button
+                    key={topic.id}
+                    onClick={() => {
+                      void loadSourcePost(topic.postId ?? topic.id);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25"
+                  >
+                    {hasCoverImage ? (
+                      <img src={topic.coverImage} alt={topic.title} className="h-10 w-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-blue/10 text-sm font-black text-brand-blue">
+                        {CATEGORIES.find((categoryItem) => categoryItem.id === topic.category)?.emoji ?? "#"}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-gray-900">{topic.title}</p>
+                      <p className="text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k ranked this</p>
+                    </div>
+                    <ChevronRight size={16} className="flex-shrink-0 text-gray-400" />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -880,31 +890,40 @@ export function CreatePage() {
           </div>
 
           <div className="space-y-3">
-            {filteredTopics.map((topic) => (
-              <button
-                key={topic.id}
-                onClick={() => {
-                  void loadSourcePost(topic.postId ?? topic.id);
-                }}
-                className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-brand-blue/25"
-              >
-                <img src={topic.coverImage} alt={topic.title} className="h-20 w-20 flex-shrink-0 object-cover" />
-                <div className="flex-1 py-3 pr-3">
-                  <span className="text-xs font-medium text-brand-blue">
-                    {CATEGORIES.find((categoryItem) => categoryItem.id === topic.category)?.emoji}
-                  </span>
-                  <h3 className="mt-0.5 text-sm font-bold text-gray-900">{topic.title}</h3>
-                  <p className="mt-1 text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k participants</p>
-                </div>
-                <div className="flex items-center pr-3">
-                  {loadingSourcePostId === (topic.postId ?? topic.id) ? (
-                    <span className="text-xs font-medium text-brand-blue">Loading...</span>
+            {filteredTopics.map((topic) => {
+              const topicCategory = CATEGORIES.find((categoryItem) => categoryItem.id === topic.category);
+              const hasCoverImage = hasUsableCoverImage(topic.coverImage);
+
+              return (
+                <button
+                  key={topic.id}
+                  onClick={() => {
+                    void loadSourcePost(topic.postId ?? topic.id);
+                  }}
+                  className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25"
+                >
+                  {hasCoverImage ? (
+                    <img src={topic.coverImage} alt={topic.title} className="h-16 w-16 flex-shrink-0 rounded-xl object-cover" />
                   ) : (
-                    <ChevronRight size={16} className="text-gray-400" />
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-lg">
+                      {topicCategory?.emoji ?? "#"}
+                    </div>
                   )}
-                </div>
-              </button>
-            ))}
+                  <div className="min-w-0 flex-1">
+                    <span className="text-xs font-medium text-brand-blue">{topicCategory?.emoji} {topicCategory?.name}</span>
+                    <h3 className="mt-0.5 text-sm font-bold text-gray-900">{topic.title}</h3>
+                    <p className="mt-1 text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k participants</p>
+                  </div>
+                  <div className="flex items-center">
+                    {loadingSourcePostId === (topic.postId ?? topic.id) ? (
+                      <span className="text-xs font-medium text-brand-blue">Loading...</span>
+                    ) : (
+                      <ChevronRight size={16} className="text-gray-400" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Flame, MessageCircle, Search, TrendingUp, Users, X } from "lucide-react";
 import { messagePathForUsername } from "../lib/navigation";
 import { fetchCategories, fetchSearchOverview, fetchTrendingTopics } from "../lib/ranksterApi";
-import type { Category, SearchOverviewResponse, TrendingTopic, User } from "../lib/feedUi";
+import { hasUsableCoverImage, type Category, type SearchOverviewResponse, type TrendingTopic, type User } from "../lib/feedUi";
 
 export function SearchPage() {
   const router = useRouter();
@@ -236,18 +236,26 @@ function TopicCard({
   category?: Category;
   onOpen: () => void;
 }) {
+  const hasCoverImage = hasUsableCoverImage(topic.coverImage);
+
   return (
     <button
       onClick={onOpen}
-      className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-brand-blue/25 hover:shadow-md"
+      className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25 hover:shadow-md"
     >
-      <div className="relative h-20 w-20 flex-shrink-0">
-        <Image src={topic.coverImage} alt={topic.title} fill className="object-cover" sizes="80px" />
-        <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-lg bg-black/60">
-          <span className="text-[9px] font-black text-white">#{index + 1}</span>
+      {hasCoverImage ? (
+        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl">
+          <Image src={topic.coverImage} alt={topic.title} fill className="object-cover" sizes="80px" />
+          <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-lg bg-black/60">
+            <span className="text-[9px] font-black text-white">#{index + 1}</span>
+          </div>
         </div>
-      </div>
-      <div className="flex-1 py-3 pr-3">
+      ) : (
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-xs font-black text-brand-blue">
+          #{index + 1}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
         <span className="text-xs font-medium text-brand-blue">
           {category?.emoji} {category?.name}
         </span>
