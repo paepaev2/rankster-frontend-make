@@ -534,6 +534,7 @@ export function ProfilePage() {
                       onProfileClick={(user) => router.push(`/profile/${user.username}`)}
                       onTopicClick={(postId) => router.push(`/topic/${postId}`)}
                       onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+                      onTagClick={(tag) => router.push(`/search?q=${encodeURIComponent(`#${tag}`)}`)}
                       onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
                       currentUser={session?.user}
                       isAuthLoading={isAuthLoading}

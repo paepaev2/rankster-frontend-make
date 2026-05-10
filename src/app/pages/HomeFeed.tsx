@@ -177,6 +177,7 @@ export function HomeFeed() {
             onProfileClick={(user) => navigate(`/profile/${user.username}`)}
             onTopicClick={(postId) => navigate(`/topic/${postId}`)}
             onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+            onTagClick={(tag) => navigate(`/search?q=${encodeURIComponent(`#${tag}`)}`)}
             onEditTierList={(postId) => navigate(`/create?editPost=${encodeURIComponent(postId)}`)}
             currentUser={currentUser}
             isAuthLoading={isAuthLoading}

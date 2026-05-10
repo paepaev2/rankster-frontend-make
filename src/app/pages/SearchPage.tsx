@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, MessageCircle, Search, TrendingUp, Users, X } from "lucide-react";
 import { messagePathForUsername } from "../lib/navigation";
 import { fetchCategories, fetchSearchOverview, fetchTrendingTopics } from "../lib/ranksterApi";
@@ -10,6 +10,8 @@ import { hasUsableCoverImage, type Category, type SearchOverviewResponse, type T
 
 export function SearchPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const searchParamQuery = searchParams.get("q") ?? "";
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -17,6 +19,14 @@ export function SearchPage() {
   const [results, setResults] = useState<SearchOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
+  const isSearching = deferredQuery.trim().length > 0;
+
+  useEffect(() => {
+    setQuery(searchParamQuery);
+    setActiveCategory(null);
+    setResults(null);
+    setError(null);
+  }, [searchParamQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,11 +89,19 @@ export function SearchPage() {
   }, [categories]);
 
   const visibleUsers = results?.users ?? [];
-  const visibleTopics = (results?.topics ?? trendingTopics).filter((topic) => {
+  const searchResultCategories = results?.categories ?? [];
+  const topicSource = isSearching ? results?.topics ?? [] : trendingTopics;
+  const visibleTopics = topicSource.filter((topic) => {
     return activeCategory === null || topic.category === activeCategory;
   });
 
-  const visibleCategories = results?.categories.length ? results.categories : categories;
+  function openTagSearch(tag: string) {
+    const normalizedTag = tag.replace(/^#+/, "").trim();
+    if (!normalizedTag) {
+      return;
+    }
+    router.push(`/search?q=${encodeURIComponent(`#${normalizedTag}`)}`);
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,6 +115,8 @@ export function SearchPage() {
               value={query}
               onChange={(event) => {
                 setError(null);
+                setActiveCategory(null);
+                setResults(null);
                 setQuery(event.target.value);
               }}
               placeholder="Search topics, people, categories..."
@@ -104,9 +124,12 @@ export function SearchPage() {
             />
             {query ? (
               <button
+                type="button"
                 onClick={() => {
                   setQuery("");
                   setResults(null);
+                  setActiveCategory(null);
+                  router.replace("/search", { scroll: false });
                 }}
                 className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
                 aria-label="Clear search"
@@ -166,6 +189,7 @@ export function SearchPage() {
           </div>
         ) : null}
 
+        {!isSearching ? (
         <div className="mt-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-wider text-gray-500 uppercase">Categories</h2>
@@ -176,7 +200,7 @@ export function SearchPage() {
             ) : null}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {visibleCategories.map((category) => (
+            {categories.map((category) => (
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(activeCategory === category.id ? null : category.id)}
@@ -192,19 +216,52 @@ export function SearchPage() {
             ))}
           </div>
         </div>
+        ) : searchResultCategories.length > 0 ? (
+          <div className="mt-4">
+            <h2 className="mb-3 text-sm font-bold tracking-wider text-gray-500 uppercase">Matching Categories</h2>
+            <div className="grid grid-cols-2 gap-2">
+              {searchResultCategories.map((category) => (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(category.id);
+                    setQuery(category.name);
+                    setResults(null);
+                    router.replace(`/search?q=${encodeURIComponent(category.name)}`, { scroll: false });
+                  }}
+                  className={`flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition-all ${
+                    activeCategory === category.id
+                      ? "border-brand-blue/55 bg-brand-blue/10"
+                      : "border-gray-100 bg-white shadow-sm hover:border-brand-blue/25"
+                  }`}
+                >
+                  <span className="text-2xl">{category.emoji}</span>
+                  <span className="text-sm font-semibold text-gray-800">{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-6">
           <div className="mb-3 flex items-center gap-2">
             <Flame size={16} className="text-orange-500" />
             <h2 className="text-sm font-bold tracking-wider text-gray-500 uppercase">
-              {activeCategory ? "Filtered Topics" : "Trending Now"}
+              {isSearching ? "Search Results" : activeCategory ? "Filtered Topics" : "Trending Now"}
             </h2>
           </div>
 
-          {visibleTopics.length === 0 ? (
+          {isSearching && !results ? (
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
+              Searching...
+            </div>
+          ) : visibleTopics.length === 0 ? (
             <div className="py-12 text-center">
               <span className="text-4xl">🔍</span>
-              <p className="mt-2 text-sm text-gray-500">No topics found</p>
+              <p className="mt-2 text-sm text-gray-500">
+                {isSearching ? "No results found" : "No topics found"}
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -215,6 +272,7 @@ export function SearchPage() {
                   index={index}
                   category={categoryMap.get(topic.category)}
                   onOpen={() => router.push(`/topic/${topic.postId ?? topic.id}`)}
+                  onTagClick={openTagSearch}
                 />
               ))}
             </div>
@@ -230,17 +288,30 @@ function TopicCard({
   index,
   category,
   onOpen,
+  onTagClick,
 }: {
   topic: TrendingTopic;
   index: number;
   category?: Category;
   onOpen: () => void;
+  onTagClick: (tag: string) => void;
 }) {
   const hasCoverImage = hasUsableCoverImage(topic.coverImage);
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) {
+          return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
       className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25 hover:shadow-md"
     >
       {hasCoverImage ? (
@@ -270,13 +341,22 @@ function TopicCard({
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1">
           {topic.tags.map((tag) => (
-            <span key={tag} className="text-[10px] text-gray-400">
+            <button
+              key={tag}
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onTagClick(tag);
+              }}
+              onKeyDown={(event) => event.stopPropagation()}
+              className="rounded-full text-[10px] text-gray-400 transition-colors hover:text-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/25"
+            >
               #{tag}
-            </span>
+            </button>
           ))}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

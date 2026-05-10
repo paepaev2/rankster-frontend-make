@@ -15,6 +15,7 @@ interface RankPostCardProps {
   onProfileClick?: (user: User) => void;
   onTopicClick?: (postId: string) => void;
   onRankThis?: (postId: string) => void;
+  onTagClick?: (tag: string) => void;
   onEditTierList?: (postId: string) => void;
   onPostUpdated?: (post: RankPost) => void;
   onPostDeleted?: (postId: string) => void;
@@ -358,6 +359,7 @@ export function RankPostCard({
   onProfileClick,
   onTopicClick,
   onRankThis,
+  onTagClick,
   onEditTierList,
   onPostUpdated,
   onPostDeleted,
@@ -886,9 +888,14 @@ export function RankPostCard({
       {/* Tags */}
       <div className="px-4 pt-2 flex flex-wrap gap-1">
         {post.tags.map((tag) => (
-          <span key={tag} className="text-xs text-brand-blue hover:text-brand-blue-dark cursor-pointer">
+          <button
+            key={tag}
+            type="button"
+            onClick={() => onTagClick?.(tag)}
+            className="text-xs text-brand-blue transition-colors hover:text-brand-blue-dark focus:outline-none focus:ring-2 focus:ring-brand-blue/25 rounded-full"
+          >
             #{tag}
-          </span>
+          </button>
         ))}
       </div>
 
