@@ -312,6 +312,10 @@ export function DMPage({ initialUsername }: DMPageProps) {
     setActiveThreadId(thread.id);
   };
 
+  const openProfile = (username: string) => {
+    router.push(`/profile/${encodeURIComponent(username)}`);
+  };
+
   const handleSendMessage = async () => {
     if (!activeThreadId || !newMessage.trim()) {
       return;
@@ -372,7 +376,12 @@ export function DMPage({ initialUsername }: DMPageProps) {
             <ArrowLeft size={22} />
           </button>
           {activeChatUser ? (
-            <>
+            <button
+              type="button"
+              onClick={() => openProfile(activeChatUser.username)}
+              className="flex min-w-0 items-center gap-3 rounded-2xl text-left transition-colors hover:bg-gray-50"
+              aria-label={`View ${activeChatUser.displayName}'s profile`}
+            >
               <Image
                 src={activeChatUser.avatar}
                 alt={activeChatUser.displayName}
@@ -384,7 +393,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
                 <p className="text-sm font-bold text-gray-900">{activeChatUser.displayName}</p>
                 <p className="text-xs font-medium text-green-500">Active now</p>
               </div>
-            </>
+            </button>
           ) : null}
           <div className="ml-auto">
             <span
@@ -409,13 +418,20 @@ export function DMPage({ initialUsername }: DMPageProps) {
               {activeThread?.messages.length === 0 ? (
                 <div className="flex min-h-[45vh] flex-col items-center justify-center text-center">
                   {activeChatUser ? (
-                    <Image
-                      src={activeChatUser.avatar}
-                      alt={activeChatUser.displayName}
-                      width={72}
-                      height={72}
-                      className="h-[72px] w-[72px] rounded-3xl object-cover shadow-sm"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => openProfile(activeChatUser.username)}
+                      className="rounded-3xl transition-transform active:scale-95"
+                      aria-label={`View ${activeChatUser.displayName}'s profile`}
+                    >
+                      <Image
+                        src={activeChatUser.avatar}
+                        alt={activeChatUser.displayName}
+                        width={72}
+                        height={72}
+                        className="h-[72px] w-[72px] rounded-3xl object-cover shadow-sm"
+                      />
+                    </button>
                   ) : null}
                   <h2 className="mt-4 text-lg font-black text-gray-900">Message {activeChatUser?.displayName ?? "this user"}</h2>
                   <p className="mt-1 max-w-[260px] text-sm leading-6 text-gray-500">
@@ -426,13 +442,20 @@ export function DMPage({ initialUsername }: DMPageProps) {
                 activeThread?.messages.map((message) => (
                   <div key={message.id} className={`flex gap-2 ${message.mine ? "justify-end" : "justify-start"}`}>
                     {!message.mine && activeChatUser ? (
-                      <Image
-                        src={activeChatUser.avatar}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="h-7 w-7 self-end rounded-full object-cover"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => openProfile(activeChatUser.username)}
+                        className="self-end rounded-full transition-transform active:scale-95"
+                        aria-label={`View ${activeChatUser.displayName}'s profile`}
+                      >
+                        <Image
+                          src={activeChatUser.avatar}
+                          alt=""
+                          width={28}
+                          height={28}
+                          className="h-7 w-7 rounded-full object-cover"
+                        />
+                      </button>
                     ) : null}
                     <div className="max-w-[75%]">
                       <div
@@ -528,12 +551,13 @@ export function DMPage({ initialUsername }: DMPageProps) {
             <p className="mb-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Quick Chat</p>
             <div className="no-scrollbar flex gap-3 overflow-x-auto">
               {threads.slice(0, 4).map((thread) => (
-                <button
-                  key={thread.id}
-                  onClick={() => openThread(thread)}
-                  className="flex flex-shrink-0 flex-col items-center gap-1"
-                >
-                  <div className="relative">
+                <div key={thread.id} className="flex flex-shrink-0 flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => openThread(thread)}
+                    className="relative rounded-full transition-transform active:scale-95"
+                    aria-label={`Open chat with ${thread.user.displayName}`}
+                  >
                     <Image
                       src={thread.user.avatar}
                       alt={thread.user.displayName}
@@ -542,9 +566,16 @@ export function DMPage({ initialUsername }: DMPageProps) {
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
-                  </div>
-                  <span className="max-w-[48px] truncate text-[10px] text-gray-500">{thread.user.username}</span>
-                </button>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openProfile(thread.user.username)}
+                    className="max-w-[48px] truncate text-[10px] text-gray-500 transition-colors hover:text-brand-blue"
+                    aria-label={`View ${thread.user.displayName}'s profile`}
+                  >
+                    {thread.user.username}
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -557,12 +588,16 @@ export function DMPage({ initialUsername }: DMPageProps) {
               </div>
             ) : (
               filteredThreads.map((thread) => (
-                <button
+                <div
                   key={thread.id}
-                  onClick={() => openThread(thread)}
                   className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-all hover:bg-white"
                 >
-                  <div className="relative flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openProfile(thread.user.username)}
+                    className="relative flex-shrink-0 rounded-full transition-transform active:scale-95"
+                    aria-label={`View ${thread.user.displayName}'s profile`}
+                  >
                     <Image
                       src={thread.user.avatar}
                       alt={thread.user.displayName}
@@ -575,8 +610,13 @@ export function DMPage({ initialUsername }: DMPageProps) {
                         {thread.unread}
                       </span>
                     ) : null}
-                  </div>
-                  <div className="min-w-0 flex-1">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openThread(thread)}
+                    className="min-w-0 flex-1 text-left"
+                    aria-label={`Open chat with ${thread.user.displayName}`}
+                  >
                     <div className="flex items-center justify-between">
                       <span className={`text-sm ${thread.unread > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-700"}`}>
                         {thread.user.displayName}
@@ -586,8 +626,8 @@ export function DMPage({ initialUsername }: DMPageProps) {
                     <p className={`mt-0.5 truncate text-xs ${thread.unread > 0 ? "font-medium text-gray-700" : "text-gray-400"}`}>
                       {thread.lastMessage}
                     </p>
-                  </div>
-                </button>
+                  </button>
+                </div>
               ))
             )}
           </div>
