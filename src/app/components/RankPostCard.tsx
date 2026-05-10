@@ -8,7 +8,7 @@ import type { Comment as RankPostComment, RankPost, TierRow, User } from "../lib
 import { TierListDisplay } from "./TierListDisplay";
 import { CATEGORIES } from "../data/mockData";
 import { useSaved } from "../lib/savedContext";
-import { createComment, deleteRankPost, likeComment, unlikeComment, updateRankPost } from "../lib/ranksterApi";
+import { createComment, deleteRankPost, likeComment, likePost, unlikeComment, unlikePost, updateRankPost } from "../lib/ranksterApi";
 
 interface RankPostCardProps {
   post: RankPost;
@@ -359,6 +359,7 @@ export function RankPostCard({
   const [post, setPost] = useState(initialPost);
   const [liked, setLiked] = useState(initialPost.isLiked);
   const [likeCount, setLikeCount] = useState(initialPost.likes);
+  const [isPostLikePending, setIsPostLikePending] = useState(false);
   const { savedIds, toggleSave } = useSaved();
   const saved = savedIds.has(post.id);
   const [expanded, setExpanded] = useState(false);
@@ -397,9 +398,40 @@ export function RankPostCard({
     setEditIsPublic(initialPost.isPublic);
   }, [initialPost]);
 
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
+  const handleLike = async () => {
+    if (!currentUser) {
+      setPostActionError("Sign in to like posts.");
+      return;
+    }
+
+    if (isPostLikePending) {
+      return;
+    }
+
+    const previousLiked = liked;
+    const previousLikeCount = likeCount;
+    const nextLiked = !previousLiked;
+    const nextLikeCount = Math.max(0, previousLikeCount + (nextLiked ? 1 : -1));
+
+    setIsPostLikePending(true);
+    setPostActionError(null);
+    setLiked(nextLiked);
+    setLikeCount(nextLikeCount);
+
+    try {
+      const updatedLike = nextLiked ? await likePost(post.id) : await unlikePost(post.id);
+      const updatedPost = { ...post, likes: updatedLike.likes, isLiked: updatedLike.isLiked };
+      setPost(updatedPost);
+      setLiked(updatedLike.isLiked);
+      setLikeCount(updatedLike.likes);
+      onPostUpdated?.(updatedPost);
+    } catch (error) {
+      setLiked(previousLiked);
+      setLikeCount(previousLikeCount);
+      setPostActionError(error instanceof Error ? error.message : "Could not update the post like.");
+    } finally {
+      setIsPostLikePending(false);
+    }
   };
 
   const formatCount = (n: number) => {
@@ -891,8 +923,11 @@ export function RankPostCard({
       <div className="px-4 py-3 flex items-center justify-between border-t border-gray-50 mt-3">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={handleLike}
+            disabled={isPostLikePending}
             className={`flex items-center gap-1.5 transition-all ${liked ? "text-red-500" : "text-gray-400 hover:text-red-400"}`}
+            aria-label={liked ? "Unlike post" : "Like post"}
           >
             <Heart size={19} className={liked ? "fill-red-500" : ""} />
             <span className="text-xs font-semibold">{formatCount(likeCount)}</span>

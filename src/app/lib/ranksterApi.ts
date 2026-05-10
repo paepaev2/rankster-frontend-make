@@ -209,6 +209,18 @@ export async function createComment(postId: string, text: string) {
   });
 }
 
+export async function likePost(postId: string) {
+  return apiFetch<Pick<RankPost, "likes" | "isLiked">>(`/feed/post/${encodeURIComponent(postId)}/like`, {
+    method: "POST",
+  });
+}
+
+export async function unlikePost(postId: string) {
+  return apiFetch<Pick<RankPost, "likes" | "isLiked">>(`/feed/post/${encodeURIComponent(postId)}/like`, {
+    method: "DELETE",
+  });
+}
+
 export async function likeComment(commentId: string) {
   return apiFetch<Pick<Comment, "likes" | "isLiked">>(`/feed/comments/${encodeURIComponent(commentId)}/like`, {
     method: "POST",
