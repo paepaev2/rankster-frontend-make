@@ -394,6 +394,7 @@ export function RankPostCard({
 
   const category = CATEGORIES.find((c) => c.id === post.category);
   const hasCoverImage = hasUsableCoverImage(post.coverImage);
+  const commentPreview = comments.slice(0, 2);
 
   useEffect(() => {
     setPost(initialPost);
@@ -653,7 +654,7 @@ export function RankPostCard({
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 pb-3">
+      <div className={`flex items-center justify-between ${hasCoverImage ? "p-4 pb-3" : "px-3 pt-3 pb-1"}`}>
         <div className="flex items-center gap-3">
           <button onClick={() => onProfileClick?.(post.user.id)} className="relative">
             <Image
@@ -661,7 +662,7 @@ export function RankPostCard({
               alt={post.user.displayName}
               width={40}
               height={40}
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-brand-blue/15"
+              className={`${hasCoverImage ? "h-10 w-10" : "h-9 w-9"} rounded-full object-cover ring-2 ring-brand-blue/15`}
             />
             {post.user.verified && (
               <span className="absolute -bottom-0.5 -right-0.5 bg-brand-blue/100 rounded-full w-4 h-4 flex items-center justify-center">
@@ -669,11 +670,11 @@ export function RankPostCard({
               </span>
             )}
           </button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => onProfileClick?.(post.user.id)}
-                className="font-semibold text-gray-900 text-sm hover:text-brand-blue transition-colors"
+                className="truncate font-semibold text-gray-900 text-sm hover:text-brand-blue transition-colors"
               >
                 {post.user.displayName}
               </button>
@@ -844,9 +845,9 @@ export function RankPostCard({
             </div>
           </div>
         ) : (
-          <div className="px-4 pb-1">
-            <h3 className="text-base font-black leading-tight text-gray-900">{post.title}</h3>
-            <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-500">
+          <div className="px-3 pb-0 pt-0">
+            <h3 className="text-[15px] font-black leading-snug text-gray-900">{post.title}</h3>
+            <div className="mt-1 flex items-center gap-1 text-[11px] text-gray-500">
               <Users size={12} className="text-brand-blue/70" />
               <span>{formatCount(post.participantCount)} ranked this</span>
             </div>
@@ -855,7 +856,7 @@ export function RankPostCard({
       </button>
 
       {/* Tier List */}
-      <div className="px-4 pt-3">
+      <div className={`${hasCoverImage ? "px-4 pt-3" : "px-3 pt-2"}`}>
         <TierListDisplay tiers={post.tiers} tierRows={post.tierRows} compact={!expanded} />
         {!expanded && (
           <button
@@ -891,16 +892,36 @@ export function RankPostCard({
         ))}
       </div>
 
-      {onRankThis && (
-        <div className="px-4 pt-3">
-          <button
-            onClick={() => onRankThis(post.id)}
-            className="w-full rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-4 py-2.5 text-sm font-semibold text-brand-blue-dark transition-colors hover:border-brand-blue/35 hover:bg-brand-blue/15"
-          >
-            Rank This Yourself
-          </button>
-        </div>
-      )}
+      {!showComments && commentPreview.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setShowComments(true)}
+          className="mx-4 mt-3 block w-[calc(100%-2rem)] rounded-2xl bg-gray-50/90 px-3 py-2.5 text-left transition-colors hover:bg-gray-100"
+        >
+          <div className="space-y-2">
+            {commentPreview.map((comment) => (
+              <div key={comment.id} className="flex items-start gap-2">
+                <Image
+                  src={comment.user.avatar}
+                  alt={comment.user.displayName}
+                  width={22}
+                  height={22}
+                  className="h-[22px] w-[22px] flex-shrink-0 rounded-full object-cover"
+                />
+                <p className="min-w-0 flex-1 truncate text-xs text-gray-600">
+                  <span className="font-semibold text-gray-800">{comment.user.username}</span>{" "}
+                  {comment.text}
+                </p>
+              </div>
+            ))}
+          </div>
+          {comments.length > commentPreview.length ? (
+            <p className="mt-2 text-[11px] font-semibold text-brand-blue">
+              View all {formatCount(comments.length)} comments
+            </p>
+          ) : null}
+        </button>
+      ) : null}
 
       {/* IG generating overlay */}
       {igState === "generating" && (
@@ -1026,6 +1047,15 @@ export function RankPostCard({
               </>
             )}
           </div>
+          {onRankThis ? (
+            <button
+              type="button"
+              onClick={() => onRankThis(post.id)}
+              className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-2.5 py-1 text-[11px] font-bold text-brand-blue-dark transition-colors hover:border-brand-blue/35 hover:bg-brand-blue/15"
+            >
+              Rank this
+            </button>
+          ) : null}
         </div>
 
         <button
