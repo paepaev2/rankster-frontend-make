@@ -202,6 +202,7 @@ export interface LeaderboardEntry {
 export interface CreateRankInput {
   title: string;
   category: string;
+  coverImage?: string;
   description: string;
   tags: string[];
   tiers: TierData;
@@ -211,7 +212,7 @@ export interface CreateRankInput {
   sourcePostId?: string;
 }
 
-export type UpdateRankPostInput = Pick<CreateRankInput, "title" | "category" | "description" | "tags" | "tiers" | "tierRows" | "allItems" | "isPublic">;
+export type UpdateRankPostInput = Pick<CreateRankInput, "title" | "category" | "coverImage" | "description" | "tags" | "tiers" | "tierRows" | "allItems" | "isPublic">;
 
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   S: { bg: "bg-red-500", text: "text-white", border: "border-red-600" },

@@ -10,6 +10,7 @@ import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, upda
 
 type Mode = "choose" | "create-new" | "rank-existing";
 type ItemFormat = "text" | "image";
+type ImageUploadTarget = "cover" | "items" | "rank";
 
 interface TierItem {
   id: string;
@@ -389,6 +390,7 @@ export function CreatePage() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("choose");
   const [title, setTitle] = useState("");
+  const [coverImage, setCoverImage] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -408,7 +410,7 @@ export function CreatePage() {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>(TRENDING_TOPICS);
   const [topicsError, setTopicsError] = useState<string | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
-  const [uploadingImageTarget, setUploadingImageTarget] = useState<"items" | "rank" | null>(null);
+  const [uploadingImageTarget, setUploadingImageTarget] = useState<ImageUploadTarget | null>(null);
   const [loadingSourcePostId, setLoadingSourcePostId] = useState<string | null>(null);
   const [loadingEditPostId, setLoadingEditPostId] = useState<string | null>(null);
   const [selectedSourcePostId, setSelectedSourcePostId] = useState<string | null>(null);
@@ -425,6 +427,7 @@ export function CreatePage() {
     topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
   );
   const selectedCategory = CATEGORIES.find((categoryItem) => categoryItem.id === category);
+  const hasCoverPreview = hasUsableCoverImage(coverImage);
 
   useEffect(() => {
     let cancelled = false;
@@ -455,6 +458,7 @@ export function CreatePage() {
       const post = await fetchPost(postId);
       setTitle(post.title);
       setCategory(post.category);
+      setCoverImage(hasUsableCoverImage(post.coverImage) ? post.coverImage : "");
       setDescription("");
       setEditingPostId(null);
       setSelectedSourcePostId(post.id);
@@ -484,6 +488,7 @@ export function CreatePage() {
 
       setTitle(post.title);
       setCategory(post.category);
+      setCoverImage(hasUsableCoverImage(post.coverImage) ? post.coverImage : "");
       setDescription(post.description);
       setIsPublic(post.isPublic);
       setSelectedSourcePostId(null);
@@ -527,13 +532,15 @@ export function CreatePage() {
     void loadEditPost(editPostId);
   }, [editingPostId, loadEditPost, loadingEditPostId, searchParams]);
 
-  const uploadItemImage = async (file: File, target: "items" | "rank") => {
+  const uploadListImage = async (file: File, target: ImageUploadTarget) => {
     setImageUploadError(null);
     setUploadingImageTarget(target);
     try {
       await ensureMockSession();
-      const uploaded = await uploadImage(file, "rank-item");
-      if (target === "items") {
+      const uploaded = await uploadImage(file, target === "cover" ? "tier-cover" : "rank-item");
+      if (target === "cover") {
+        setCoverImage(uploaded.url);
+      } else if (target === "items") {
         setNewItemImageUrl(uploaded.url);
       } else {
         setRankNewImageUrl(uploaded.url);
@@ -757,6 +764,7 @@ export function CreatePage() {
     setTiers(createDefaultTiers());
     setItems([]);
     setTitle("");
+    setCoverImage("");
     setDescription("");
     setCategory("");
     setIsPublic(true);
@@ -782,6 +790,7 @@ export function CreatePage() {
       const payload = {
         title,
         category,
+        coverImage: hasCoverPreview ? coverImage : "",
         description,
         tags: selectedSourceTags.length > 0 ? selectedSourceTags : [],
         tiers: buildTierPayload(tiers),
@@ -965,6 +974,80 @@ export function CreatePage() {
             </div>
 
             <div>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div>
+                  <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Cover photo</label>
+                  <p className="mt-0.5 text-[11px] text-gray-400">Optional. This is shown on the feed, search, and topic page.</p>
+                </div>
+                {hasCoverPreview ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoverImage("");
+                      setImageUploadError(null);
+                    }}
+                    className="text-xs font-semibold text-red-500 transition-colors hover:text-red-600"
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-dashed border-gray-200 bg-gray-50">
+                {hasCoverPreview ? (
+                  <div className="relative aspect-[16/9] bg-gray-100">
+                    <img
+                      src={coverImage}
+                      alt={`${title || "Tier list"} cover`}
+                      className="h-full w-full object-cover"
+                      onError={() => setCoverImage("")}
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-3 py-3">
+                      <p className="truncate text-xs font-bold text-white">{title || "Tier list cover"}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex aspect-[16/9] flex-col items-center justify-center px-4 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue">
+                      <Image size={22} />
+                    </div>
+                    <p className="mt-3 text-sm font-bold text-gray-800">Upload a cover for this tier list</p>
+                    <p className="mt-1 max-w-xs text-xs leading-relaxed text-gray-400">
+                      If you skip this, Rankster will keep using the clean no-cover layout.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="url"
+                  value={coverImage}
+                  onChange={(event) => setCoverImage(event.target.value)}
+                  placeholder="Paste image URL or upload a photo"
+                  className="min-w-0 flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+                />
+                <label className="flex h-10 cursor-pointer items-center rounded-xl border border-brand-blue/15 bg-brand-blue/10 px-3 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/15">
+                  {uploadingImageTarget === "cover" ? "Uploading..." : "Upload"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={uploadingImageTarget !== null}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) {
+                        void uploadListImage(file, "cover");
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+              {imageUploadError ? <p className="mt-2 text-xs font-medium text-red-500">{imageUploadError}</p> : null}
+            </div>
+
+            <div>
               <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Category *</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {CATEGORIES.map((categoryItem) => (
@@ -1110,7 +1193,7 @@ export function CreatePage() {
                         const file = event.target.files?.[0];
                         event.target.value = "";
                         if (file) {
-                          void uploadItemImage(file, "items");
+                          void uploadListImage(file, "items");
                         }
                       }}
                     />
@@ -1340,7 +1423,7 @@ export function CreatePage() {
                   rankNewImageUrl={rankNewImageUrl}
                   rankNewName={rankNewName}
                   onEmojiChange={setRankNewEmoji}
-                  onImageUpload={(file) => void uploadItemImage(file, "rank")}
+                  onImageUpload={(file) => void uploadListImage(file, "rank")}
                   onImageUrlChange={setRankNewImageUrl}
                   onNameChange={setRankNewName}
                   onAddItem={addItemInRank}
@@ -1443,6 +1526,11 @@ export function CreatePage() {
           <p className="text-xs font-medium text-gray-400">Step 4 of 4 — Caption & Preview</p>
 
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            {hasCoverPreview ? (
+              <div className="mb-4 aspect-[16/9] overflow-hidden rounded-2xl bg-gray-100">
+                <img src={coverImage} alt={`${title || "Tier list"} cover preview`} className="h-full w-full object-cover" />
+              </div>
+            ) : null}
             <div className="mb-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Preview</p>

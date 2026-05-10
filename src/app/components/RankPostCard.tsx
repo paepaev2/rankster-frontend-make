@@ -554,6 +554,7 @@ export function RankPostCard({
       const updatedPost = await updateRankPost(post.id, {
         title,
         category,
+        coverImage: hasUsableCoverImage(post.coverImage) ? post.coverImage : "",
         description: editDescription.trim(),
         tags: editTags
           .split(",")
