@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
+import { TierListDisplay } from "../components/TierListDisplay";
 import { hasUsableCoverImage, type RankPost, type TierData, type TierItem as FeedTierItem, type TierRow, type TrendingTopic } from "../lib/feedUi";
 import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost, uploadImage } from "../lib/ranksterApi";
 
@@ -50,6 +51,23 @@ const DEFAULT_TIERS: Tier[] = [
 ];
 
 const LEGACY_TIER_KEYS = ["S", "A", "B", "C", "D"] as const;
+const CREATE_STEP_COUNT = 4;
+
+function StepProgress({ step }: { step: number }) {
+  return (
+    <div className="flex gap-1.5">
+      {Array.from({ length: CREATE_STEP_COUNT }, (_, index) => {
+        const segment = index + 1;
+        return (
+          <div
+            key={segment}
+            className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 function createDefaultTiers(): Tier[] {
   return DEFAULT_TIERS.map((tier) => ({ ...tier, items: [] }));
@@ -406,6 +424,7 @@ export function CreatePage() {
   const filteredTopics = trendingTopics.filter((topic) =>
     topic.title.toLowerCase().includes(searchTopic.toLowerCase()),
   );
+  const selectedCategory = CATEGORIES.find((categoryItem) => categoryItem.id === category);
 
   useEffect(() => {
     let cancelled = false;
@@ -930,16 +949,12 @@ export function CreatePage() {
 
       {mode === "create-new" && step === 1 && (
         <div className="space-y-4 px-4 pt-4 pb-8">
-          <div className="flex gap-1.5">
-            {[1, 2, 3].map((segment) => (
-              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`} />
-            ))}
-          </div>
-          <p className="text-xs font-medium text-gray-400">Step 1 of 3 — Topic Info</p>
+          <StepProgress step={step} />
+          <p className="text-xs font-medium text-gray-400">Step 1 of 4 — Tier list setup</p>
 
           <div className="space-y-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
             <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Title *</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Tier list name *</label>
               <input
                 type="text"
                 value={title}
@@ -967,17 +982,6 @@ export function CreatePage() {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Description</label>
-              <textarea
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="What's this tier list about?"
-                rows={3}
-                className="mt-2 w-full resize-none rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-              />
             </div>
 
             <div>
@@ -1042,12 +1046,8 @@ export function CreatePage() {
 
       {mode === "create-new" && step === 2 && (
         <div className="space-y-4 px-4 pt-4 pb-8">
-          <div className="flex gap-1.5">
-            {[1, 2, 3].map((segment) => (
-              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`} />
-            ))}
-          </div>
-          <p className="text-xs font-medium text-gray-400">Step 2 of 3 — Add Items</p>
+          <StepProgress step={step} />
+          <p className="text-xs font-medium text-gray-400">Step 2 of 4 — Add Items</p>
 
           <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
             <div className="mb-2 flex items-center justify-between">
@@ -1208,12 +1208,8 @@ export function CreatePage() {
 
       {mode === "create-new" && step === 3 && (
         <div className="space-y-4 px-4 pt-4 pb-8">
-          <div className="flex gap-1.5">
-            {[1, 2, 3].map((segment) => (
-              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`} />
-            ))}
-          </div>
-          <p className="text-xs font-medium text-gray-400">Step 3 of 3 — Build Your Ranking</p>
+          <StepProgress step={step} />
+          <p className="text-xs font-medium text-gray-400">Step 3 of 4 — Build Your Ranking</p>
           {editingPostId && (
             <div className="rounded-2xl border border-brand-blue/15 bg-brand-blue/10 px-4 py-3">
               <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Editing Your Ranking</p>
@@ -1426,6 +1422,60 @@ export function CreatePage() {
           <div className="flex gap-2">
             <button
               onClick={() => setStep(2)}
+              className="flex-1 rounded-2xl border border-gray-200 bg-white py-3.5 font-bold text-gray-600 transition-all hover:bg-gray-50"
+            >
+              ← Back
+            </button>
+            <button
+              onClick={() => setStep(4)}
+              className="flex-1 rounded-2xl bg-brand-blue py-3.5 font-bold text-white shadow-lg transition-all hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Next: Caption →
+            </button>
+          </div>
+          {publishError && <p className="text-sm text-red-500">{publishError}</p>}
+        </div>
+      )}
+
+      {mode === "create-new" && step === 4 && (
+        <div className="space-y-4 px-4 pt-4 pb-8">
+          <StepProgress step={step} />
+          <p className="text-xs font-medium text-gray-400">Step 4 of 4 — Caption & Preview</p>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Preview</p>
+                <h2 className="mt-1 truncate text-lg font-black text-gray-900">{title}</h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  {selectedCategory?.emoji} {selectedCategory?.name ?? "Uncategorized"}
+                </p>
+              </div>
+              <span className="flex-shrink-0 rounded-full bg-gray-100 px-3 py-1 text-[11px] font-bold text-gray-500">
+                {isPublic ? "Public" : "Private"}
+              </span>
+            </div>
+
+            <TierListDisplay tiers={buildTierPayload(tiers)} tierRows={buildTierRowsPayload(tiers)} />
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+            <label className="text-xs font-bold uppercase tracking-wider text-gray-600">Post caption</label>
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Add a caption for your post..."
+              rows={4}
+              className="mt-2 w-full resize-none rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+            />
+            <p className="mt-2 text-xs text-gray-400">
+              The tier list name stays as the post title. This caption appears under it in the feed.
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setStep(3)}
               className="flex-1 rounded-2xl border border-gray-200 bg-white py-3.5 font-bold text-gray-600 transition-all hover:bg-gray-50"
             >
               ← Back
