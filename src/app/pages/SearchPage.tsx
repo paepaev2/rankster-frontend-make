@@ -3,7 +3,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Flame, MessageCircle, Search, TrendingUp, Users, X } from "lucide-react";
+import { Flame, MessageCircle, Search, SlidersHorizontal, TrendingUp, Users, X } from "lucide-react";
 import { messagePathForUsername } from "../lib/navigation";
 import { fetchCategories, fetchSearchOverview, fetchTrendingTopics } from "../lib/ranksterApi";
 import { hasUsableCoverImage, type Category, type SearchOverviewResponse, type TrendingTopic, type User } from "../lib/feedUi";
@@ -18,6 +18,7 @@ export function SearchPage() {
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
   const [results, setResults] = useState<SearchOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const deferredQuery = useDeferredValue(query);
   const isSearching = deferredQuery.trim().length > 0;
 
@@ -89,8 +90,8 @@ export function SearchPage() {
   }, [categories]);
 
   const visibleUsers = results?.users ?? [];
-  const searchResultCategories = results?.categories ?? [];
   const topicSource = isSearching ? results?.topics ?? [] : trendingTopics;
+  const activeCategoryInfo = activeCategory ? categoryMap.get(activeCategory) : undefined;
   const visibleTopics = topicSource.filter((topic) => {
     return activeCategory === null || topic.category === activeCategory;
   });
@@ -116,6 +117,7 @@ export function SearchPage() {
               onChange={(event) => {
                 setError(null);
                 setActiveCategory(null);
+                setIsFilterOpen(false);
                 setResults(null);
                 setQuery(event.target.value);
               }}
@@ -129,6 +131,7 @@ export function SearchPage() {
                   setQuery("");
                   setResults(null);
                   setActiveCategory(null);
+                  setIsFilterOpen(false);
                   router.replace("/search", { scroll: false });
                 }}
                 className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
@@ -189,68 +192,91 @@ export function SearchPage() {
           </div>
         ) : null}
 
-        {!isSearching ? (
         <div className="mt-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold tracking-wider text-gray-500 uppercase">Categories</h2>
-            {activeCategory ? (
-              <button onClick={() => setActiveCategory(null)} className="text-xs font-medium text-brand-blue">
-                Clear filter
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <Flame size={16} className="flex-shrink-0 text-orange-500" />
+              <div className="min-w-0">
+                <h2 className="text-sm font-bold tracking-wider text-gray-500 uppercase">
+                  {isSearching ? "Search Results" : "Trending Now"}
+                </h2>
+                {activeCategoryInfo ? (
+                  <p className="mt-0.5 truncate text-xs text-gray-400">
+                    Showing {activeCategoryInfo.emoji} {activeCategoryInfo.name}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            {categories.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsFilterOpen((current) => !current)}
+                className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${
+                  activeCategory || isFilterOpen
+                    ? "border-brand-blue/30 bg-brand-blue/10 text-brand-blue"
+                    : "border-gray-200 bg-white text-gray-600 shadow-sm hover:border-brand-blue/25"
+                }`}
+                aria-expanded={isFilterOpen}
+              >
+                <SlidersHorizontal size={14} />
+                {activeCategoryInfo ? activeCategoryInfo.name : "Filter"}
               </button>
             ) : null}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(activeCategory === category.id ? null : category.id)}
-                className={`flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition-all ${
-                  activeCategory === category.id
-                    ? "border-brand-blue/55 bg-brand-blue/10"
-                    : "border-transparent bg-white shadow-sm hover:border-gray-200"
-                }`}
-              >
-                <span className="text-2xl">{category.emoji}</span>
-                <span className="text-sm font-semibold text-gray-800">{category.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        ) : searchResultCategories.length > 0 ? (
-          <div className="mt-4">
-            <h2 className="mb-3 text-sm font-bold tracking-wider text-gray-500 uppercase">Matching Categories</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {searchResultCategories.map((category) => (
+
+          {isFilterOpen ? (
+            <div className="mb-3 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-bold tracking-wider text-gray-400 uppercase">Filter by category</span>
+                {activeCategory ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveCategory(null);
+                      setIsFilterOpen(false);
+                    }}
+                    className="text-xs font-semibold text-brand-blue"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+              <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 <button
-                  key={category.id}
                   type="button"
                   onClick={() => {
-                    setActiveCategory(category.id);
-                    setQuery(category.name);
-                    setResults(null);
-                    router.replace(`/search?q=${encodeURIComponent(category.name)}`, { scroll: false });
+                    setActiveCategory(null);
+                    setIsFilterOpen(false);
                   }}
-                  className={`flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition-all ${
-                    activeCategory === category.id
-                      ? "border-brand-blue/55 bg-brand-blue/10"
-                      : "border-gray-100 bg-white shadow-sm hover:border-brand-blue/25"
+                  className={`flex flex-shrink-0 items-center rounded-full border px-3 py-2 text-xs font-semibold transition-all ${
+                    activeCategory === null
+                      ? "border-gray-900 bg-gray-900 text-white"
+                      : "border-gray-200 bg-gray-50 text-gray-600"
                   }`}
                 >
-                  <span className="text-2xl">{category.emoji}</span>
-                  <span className="text-sm font-semibold text-gray-800">{category.name}</span>
+                  All
                 </button>
-              ))}
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveCategory(activeCategory === category.id ? null : category.id);
+                      setIsFilterOpen(false);
+                    }}
+                    className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition-all ${
+                      activeCategory === category.id
+                        ? "border-brand-blue bg-brand-blue text-white"
+                        : "border-gray-200 bg-gray-50 text-gray-600 hover:border-brand-blue/25"
+                    }`}
+                  >
+                    <span>{category.emoji}</span>
+                    <span>{category.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ) : null}
-
-        <div className="mt-6">
-          <div className="mb-3 flex items-center gap-2">
-            <Flame size={16} className="text-orange-500" />
-            <h2 className="text-sm font-bold tracking-wider text-gray-500 uppercase">
-              {isSearching ? "Search Results" : activeCategory ? "Filtered Topics" : "Trending Now"}
-            </h2>
-          </div>
+          ) : null}
 
           {isSearching && !results ? (
             <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
