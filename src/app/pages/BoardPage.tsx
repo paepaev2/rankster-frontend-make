@@ -51,7 +51,7 @@ export function BoardPage() {
               <p className="text-[10px] text-brand-blue font-medium">Rankings</p>
             </div>
             <div className="bg-red-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-black text-red-500">{(stats.totalLikes / 1000).toFixed(1)}k</p>
+              <p className="text-lg font-black text-red-500">{formatCount(stats.totalLikes)}</p>
               <p className="text-[10px] text-red-400 font-medium">Total Likes</p>
             </div>
             <div className="bg-orange-50 rounded-xl p-3 text-center">
@@ -120,11 +120,11 @@ export function BoardPage() {
                       <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <Heart size={12} className="text-red-400" />
-                          {(post.likes / 1000).toFixed(1)}k
+                          {formatCount(post.likes)}
                         </span>
                         <span className="flex items-center gap-1">
                           <Users size={12} className="text-brand-blue/70" />
-                          {(post.participantCount / 1000).toFixed(1)}k ranked
+                          {formatCount(post.participantCount)} ranked
                         </span>
                         {post.isPublic ? (
                           <span className="flex items-center gap-1 text-green-500">
@@ -173,11 +173,11 @@ export function BoardPage() {
                         <div className="flex items-center gap-3 mt-1.5">
                           <span className="text-xs text-gray-500 flex items-center gap-0.5">
                             <Heart size={11} className="text-red-400" />
-                            {(post.likes / 1000).toFixed(1)}k
+                            {formatCount(post.likes)}
                           </span>
                           <span className="text-xs text-gray-500 flex items-center gap-0.5">
                             <Users size={11} className="text-brand-blue/70" />
-                            {(post.participantCount / 1000).toFixed(1)}k
+                            {formatCount(post.participantCount)}
                           </span>
                           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${post.isPublic ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
                             {post.isPublic ? "Public" : "Private"}
@@ -217,7 +217,7 @@ export function BoardPage() {
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className="text-xs text-red-500 flex items-center gap-0.5">
                         <Heart size={11} className="fill-red-500" />
-                        {(post.likes / 1000).toFixed(1)}k
+                        {formatCount(post.likes)}
                       </span>
                       <span className="text-xs text-gray-400">{post.createdAt}</span>
                     </div>
@@ -239,11 +239,11 @@ export function BoardPage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Total Rankings", value: stats.totalRankings, icon: "🏆", color: "text-brand-blue" },
-                  { label: "Total Likes Received", value: `${(stats.totalLikes / 1000).toFixed(1)}k`, icon: "❤️", color: "text-red-500" },
+                  { label: "Total Likes Received", value: formatCount(stats.totalLikes), icon: "❤️", color: "text-red-500" },
                   { label: "Total Shares", value: stats.totalShares, icon: "🔄", color: "text-green-500" },
                   { label: "Avg Likes/Ranking", value: stats.avgLikes, icon: "📊", color: "text-brand-blue" },
                   { label: "Top Category", value: stats.topCategory, icon: "🎵", color: "text-orange-500" },
-                  { label: "Rank Score", value: `${(stats.rankScore / 1000).toFixed(1)}k`, icon: "⚡", color: "text-brand-yellow" },
+                  { label: "Rank Score", value: formatCount(stats.rankScore), icon: "⚡", color: "text-brand-yellow" },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-gray-50 rounded-xl p-3">
                     <div className="text-xl mb-1">{stat.icon}</div>
@@ -305,4 +305,11 @@ export function BoardPage() {
       </div>
     </div>
   );
+}
+
+function formatCount(value: number) {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k`;
+  }
+  return value.toString();
 }

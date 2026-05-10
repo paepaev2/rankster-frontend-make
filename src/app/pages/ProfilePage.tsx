@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
+import { RankPostCard } from "../components/RankPostCard";
 import { TierListDisplay } from "../components/TierListDisplay";
 import { hasUsableCoverImage, type Category, type ProfileResponse, type RankPost } from "../lib/feedUi";
 import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
@@ -321,9 +322,9 @@ export function ProfilePage() {
           <div className="mt-4 grid grid-cols-4 gap-2">
             {[
               { label: "Rankings", value: profile.stats.totalRankings },
-              { label: "Followers", value: formatFollowers(profile.stats.followers) },
-              { label: "Following", value: formatFollowers(profile.stats.following) },
-              { label: "Likes", value: `${(profile.stats.totalLikes / 1000).toFixed(0)}k` },
+              { label: "Followers", value: formatCount(profile.stats.followers) },
+              { label: "Following", value: formatCount(profile.stats.following) },
+              { label: "Likes", value: formatCount(profile.stats.totalLikes) },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-base font-black text-gray-900">{stat.value}</p>
@@ -372,6 +373,64 @@ export function ProfilePage() {
                 const isPinned = pinnedPostId === post.id;
                 const category = categoryMap.get(post.category);
                 const hasCoverImage = hasUsableCoverImage(post.coverImage);
+
+                if (isMe) {
+                  return (
+                    <div key={post.id} className="relative">
+                      {isPinned ? (
+                        <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-3 py-2">
+                          <Pin size={11} className="text-brand-blue" />
+                          <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
+                        </div>
+                      ) : null}
+                      <button
+                        onClick={() => void handlePinToggle(post.id)}
+                        className={`absolute right-14 z-10 flex h-8 w-8 items-center justify-center rounded-xl shadow-sm transition-all ${
+                          isPinned ? "top-14" : "top-3"
+                        } ${
+                          isPinned ? "bg-brand-blue/100 text-white" : "bg-black/40 text-white hover:bg-black/60"
+                        }`}
+                        title={isPinned ? "Unpin" : "Pin to profile"}
+                      >
+                        {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
+                      </button>
+                      <RankPostCard
+                        post={post}
+                        onProfileClick={(user) => router.push(`/profile/${user.username}`)}
+                        onTopicClick={(postId) => router.push(`/topic/${postId}`)}
+                        onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+                        onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
+                        currentUser={session?.user}
+                        isAuthLoading={isAuthLoading}
+                        onPostUpdated={(updatedPost) => {
+                          setProfile((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  rankings: current.rankings.map((currentPost) =>
+                                    currentPost.id === updatedPost.id ? updatedPost : currentPost,
+                                  ),
+                                }
+                              : current,
+                          );
+                        }}
+                        onPostDeleted={(postId) => {
+                          setProfile((current) =>
+                            current
+                              ? {
+                                  ...current,
+                                  rankings: current.rankings.filter((currentPost) => currentPost.id !== postId),
+                                  pinnedPostId: current.pinnedPostId === postId ? null : current.pinnedPostId,
+                                }
+                              : current,
+                          );
+                          setPinnedPostId((current) => (current === postId ? null : current));
+                        }}
+                      />
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={post.id}
@@ -424,7 +483,7 @@ export function ProfilePage() {
                       <div className="mt-2.5 flex items-center gap-4 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
                           <Heart size={12} className="text-red-400" />
-                          {(post.likes / 1000).toFixed(1)}k likes
+                          {formatCount(post.likes)} likes
                         </span>
                         <span>{post.createdAt}</span>
                       </div>
@@ -454,7 +513,16 @@ export function ProfilePage() {
                 return (
                   <div
                     key={post.id}
-                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => router.push(`/topic/${post.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        router.push(`/topic/${post.id}`);
+                      }
+                    }}
+                    className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex gap-3 p-3 cursor-pointer transition-all hover:border-brand-blue/25 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
                   >
                     {hasCoverImage ? (
                       <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
@@ -467,13 +535,16 @@ export function ProfilePage() {
                       <div className="flex items-center gap-3 mt-1.5">
                         <span className="text-xs text-gray-500 flex items-center gap-0.5">
                           <Heart size={11} className="text-red-400" />
-                          {(post.likes / 1000).toFixed(1)}k
+                          {formatCount(post.likes)}
                         </span>
                         <span className="text-xs text-gray-400">{post.createdAt}</span>
                       </div>
                     </div>
                     <button
-                      onClick={() => toggleSave(post)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleSave(post);
+                      }}
                       className="flex-shrink-0 self-center text-brand-blue hover:text-brand-blue-dark transition-colors p-1"
                       title="Remove from saved"
                     >
@@ -496,9 +567,9 @@ export function ProfilePage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Total Rankings", value: profile.stats.totalRankings, emoji: "🏆", color: "text-brand-blue" },
-                  { label: "Total Likes", value: `${(profile.stats.totalLikes / 1000).toFixed(1)}k`, emoji: "❤️", color: "text-red-500" },
-                  { label: "Followers", value: formatFollowers(profile.stats.followers), emoji: "👥", color: "text-brand-blue" },
-                  { label: "Following", value: formatFollowers(profile.stats.following), emoji: "➡️", color: "text-green-500" },
+                  { label: "Total Likes", value: formatCount(profile.stats.totalLikes), emoji: "❤️", color: "text-red-500" },
+                  { label: "Followers", value: formatCount(profile.stats.followers), emoji: "👥", color: "text-brand-blue" },
+                  { label: "Following", value: formatCount(profile.stats.following), emoji: "➡️", color: "text-green-500" },
                 ].map((stat) => (
                   <div key={stat.label} className="rounded-xl bg-gray-50 p-3">
                     <div className="mb-1 text-xl">{stat.emoji}</div>
@@ -552,7 +623,7 @@ export function ProfilePage() {
   );
 }
 
-function formatFollowers(value: number) {
+function formatCount(value: number) {
   if (value >= 1000) {
     return `${(value / 1000).toFixed(1)}k`;
   }
