@@ -15,6 +15,7 @@ import type {
   RanksterNotification,
   RankPost,
   SearchOverviewResponse,
+  TopicDetailResponse,
   TrendingTopic,
   UpdateRankPostInput,
   User,
@@ -417,4 +418,8 @@ export async function unpinProfilePost(postId: string) {
 
 export async function fetchPost(postId: string) {
   return apiFetch<RankPost>(`/feed/post/${encodeURIComponent(postId)}`);
+}
+
+export async function fetchTopicDetail(topicId: string) {
+  return apiFetch<TopicDetailResponse>(`/topics/${encodeURIComponent(topicId)}`);
 }

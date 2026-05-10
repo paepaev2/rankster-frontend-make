@@ -42,6 +42,8 @@ export interface Comment {
 
 export interface RankPost {
   id: string;
+  topicId: string;
+  parentPostId?: string;
   user: User;
   title: string;
   category: string;
@@ -128,6 +130,11 @@ export interface TrendingTopic {
   coverImage: string;
   participantCount: number;
   tags: string[];
+}
+
+export interface TopicDetailResponse {
+  topic: TrendingTopic;
+  posts: RankPost[];
 }
 
 export function hasUsableCoverImage(src?: string | null): src is string {

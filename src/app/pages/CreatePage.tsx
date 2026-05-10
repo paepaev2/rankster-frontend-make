@@ -115,6 +115,13 @@ function mapPostTierData(post: RankPost): Tier[] {
   }));
 }
 
+function formatCount(value: number) {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1)}k`;
+  }
+  return value.toString();
+}
+
 function buildTierPayload(tiers: Tier[]): TierData {
   const toFeedItems = (items: TierItem[] = []): FeedTierItem[] =>
     items.map((item) => ({
@@ -893,7 +900,7 @@ export function CreatePage() {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-gray-900">{topic.title}</p>
-                      <p className="text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k ranked this</p>
+                      <p className="text-xs text-gray-400">{formatCount(topic.participantCount)} ranked this</p>
                     </div>
                     <ChevronRight size={16} className="flex-shrink-0 text-gray-400" />
                   </button>
@@ -940,7 +947,7 @@ export function CreatePage() {
                   <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium text-brand-blue">{topicCategory?.emoji} {topicCategory?.name}</span>
                     <h3 className="mt-0.5 text-sm font-bold text-gray-900">{topic.title}</h3>
-                    <p className="mt-1 text-xs text-gray-400">{(topic.participantCount / 1000).toFixed(1)}k participants</p>
+                    <p className="mt-1 text-xs text-gray-400">{formatCount(topic.participantCount)} ranked this</p>
                   </div>
                   <div className="flex items-center">
                     {loadingSourcePostId === (topic.postId ?? topic.id) ? (

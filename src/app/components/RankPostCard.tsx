@@ -855,7 +855,7 @@ export function RankPostCard({
       ) : null}
 
       {/* Cover Image & Title */}
-      <button onClick={() => onTopicClick?.(post.id)} className="w-full text-left">
+      <button onClick={() => onTopicClick?.(post.topicId || post.id)} className="w-full text-left">
         {hasCoverImage ? (
           <div className="relative">
             <Image
