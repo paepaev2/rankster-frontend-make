@@ -306,7 +306,13 @@ export const MOCK_POSTS: RankPost[] = [
     isPublic: true,
     participantCount: 3456,
   },
-];
+].map((post) => ({
+  ...post,
+  likes: 0,
+  isLiked: false,
+  comments: [],
+  shares: 0,
+}));
 
 export const MOCK_MESSAGES: Message[] = [
   {
