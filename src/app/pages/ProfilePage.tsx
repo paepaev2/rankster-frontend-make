@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Settings, Share2, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Settings, Share2, UserCheck, UserPlus, Users, X } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
-import { TierListDisplay } from "../components/TierListDisplay";
-import { hasUsableCoverImage, type Category, type ProfileResponse, type RankPost } from "../lib/feedUi";
+import { hasUsableCoverImage, type ProfileResponse, type RankPost, type User } from "../lib/feedUi";
 import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
 import { useSaved } from "../lib/savedContext";
 import {
-  fetchCategories,
   fetchCurrentUserProfile,
+  fetchProfileFollowers,
+  fetchProfileFollowing,
   fetchUserProfile,
   followUser,
   pinProfilePost,
@@ -21,6 +21,79 @@ import {
 import { useMockSession } from "../lib/useMockSession";
 
 const PROFILE_TABS = ["Rankings", "Saved", "Stats"] as const;
+type RelationshipKind = "followers" | "following";
+
+function ProfileSkeletonBlock({ className }: { className: string }) {
+  return <div className={`animate-pulse rounded-full bg-gray-100 ${className}`} />;
+}
+
+function ProfilePageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
+        <div className="flex items-center justify-between px-4 pt-12 pb-3">
+          <ProfileSkeletonBlock className="h-6 w-24" />
+          <div className="flex gap-2">
+            <ProfileSkeletonBlock className="h-9 w-9 rounded-xl" />
+            <ProfileSkeletonBlock className="h-9 w-9 rounded-xl" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-white">
+        <div className="h-28 animate-pulse bg-gradient-to-br from-gray-100 to-gray-200" />
+        <div className="px-4 pb-4">
+          <div className="-mt-10 mb-4 flex items-end justify-between">
+            <ProfileSkeletonBlock className="h-20 w-20 rounded-2xl ring-4 ring-white" />
+            <div className="flex gap-2">
+              <ProfileSkeletonBlock className="h-10 w-24 rounded-xl" />
+              <ProfileSkeletonBlock className="h-10 w-24 rounded-xl" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <ProfileSkeletonBlock className="h-6 w-44" />
+            <ProfileSkeletonBlock className="h-4 w-24" />
+            <ProfileSkeletonBlock className="h-4 w-full" />
+            <ProfileSkeletonBlock className="h-4 w-3/4" />
+          </div>
+          <div className="mt-4 grid grid-cols-4 gap-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="space-y-2 rounded-xl bg-gray-50 p-2">
+                <ProfileSkeletonBlock className="mx-auto h-5 w-10" />
+                <ProfileSkeletonBlock className="mx-auto h-3 w-14" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-4">
+        <div className="space-y-4">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div key={index} className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+              <div className="flex items-center gap-3 p-4">
+                <ProfileSkeletonBlock className="h-10 w-10" />
+                <div className="flex-1 space-y-2">
+                  <ProfileSkeletonBlock className="h-3 w-32" />
+                  <ProfileSkeletonBlock className="h-4 w-24" />
+                </div>
+              </div>
+              <ProfileSkeletonBlock className="mx-4 h-5 w-48 rounded-lg" />
+              <div className="space-y-2 p-4">
+                {Array.from({ length: 4 }).map((_, rowIndex) => (
+                  <div key={rowIndex} className="flex min-h-9 overflow-hidden rounded-xl border border-gray-100">
+                    <div className="w-12 animate-pulse bg-gray-200" />
+                    <div className="flex flex-1 items-center px-3">
+                      <ProfileSkeletonBlock className="h-5 w-2/3" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function ProfilePage() {
   const router = useRouter();
@@ -31,10 +104,14 @@ export function ProfilePage() {
   const { savedPosts, toggleSave } = useSaved();
   const [activeTab, setActiveTab] = useState<(typeof PROFILE_TABS)[number]>("Rankings");
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [following, setFollowing] = useState(false);
   const [pinnedPostId, setPinnedPostId] = useState<string | null>(null);
   const [isFollowUpdating, setIsFollowUpdating] = useState(false);
+  const [relationshipModal, setRelationshipModal] = useState<RelationshipKind | null>(null);
+  const [relationshipUsers, setRelationshipUsers] = useState<User[]>([]);
+  const [relationshipTotal, setRelationshipTotal] = useState(0);
+  const [isRelationshipLoading, setIsRelationshipLoading] = useState(false);
+  const [relationshipError, setRelationshipError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,14 +127,10 @@ export function ProfilePage() {
 
     async function loadProfile() {
       try {
-        const [resolvedProfile, resolvedCategories] = await Promise.all([
-          isMe ? fetchCurrentUserProfile() : fetchUserProfile(username ?? ""),
-          fetchCategories(),
-        ]);
+        const resolvedProfile = isMe ? await fetchCurrentUserProfile() : await fetchUserProfile(username ?? "");
 
         if (!cancelled) {
           setProfile(resolvedProfile);
-          setCategories(resolvedCategories);
           setFollowing(resolvedProfile.isFollowing);
           setPinnedPostId(resolvedProfile.pinnedPostId);
           setError(null);
@@ -75,10 +148,6 @@ export function ProfilePage() {
       cancelled = true;
     };
   }, [authError, isAuthLoading, isMe, username]);
-
-  const categoryMap = useMemo(() => {
-    return new Map(categories.map((category) => [category.id, category]));
-  }, [categories]);
 
   const sortedPosts = useMemo(() => {
     if (!profile) {
@@ -113,6 +182,10 @@ export function ProfilePage() {
                 ...current.user,
                 followers: Math.max(current.user.followers + (nextFollowing ? 1 : -1), 0),
               },
+              stats: {
+                ...current.stats,
+                followers: Math.max(current.stats.followers + (nextFollowing ? 1 : -1), 0),
+              },
             }
           : current,
       );
@@ -140,6 +213,10 @@ export function ProfilePage() {
                 ...current.user,
                 followers: Math.max(current.user.followers + (previousFollowing ? 1 : -1), 0),
               },
+              stats: {
+                ...current.stats,
+                followers: Math.max(current.stats.followers + (previousFollowing ? 1 : -1), 0),
+              },
               isFollowing: previousFollowing,
             }
           : current,
@@ -157,6 +234,35 @@ export function ProfilePage() {
 
     const messagePath = messagePathForUsername(profile.user.username);
     router.push(session ? messagePath : loginPathForReturnTo(messagePath));
+  };
+
+  const handleOpenRelationshipModal = async (kind: RelationshipKind) => {
+    if (!profile) {
+      return;
+    }
+
+    setRelationshipModal(kind);
+    setRelationshipUsers([]);
+    setRelationshipTotal(0);
+    setRelationshipError(null);
+    setIsRelationshipLoading(true);
+
+    try {
+      const response =
+        kind === "followers"
+          ? await fetchProfileFollowers(profile.user.username)
+          : await fetchProfileFollowing(profile.user.username);
+      setRelationshipUsers(response.items);
+      setRelationshipTotal(response.total);
+    } catch (relationshipLoadError) {
+      setRelationshipError(
+        relationshipLoadError instanceof Error
+          ? relationshipLoadError.message
+          : `Failed to load ${kind}.`,
+      );
+    } finally {
+      setIsRelationshipLoading(false);
+    }
   };
 
   const handlePinToggle = async (postId: string) => {
@@ -180,7 +286,7 @@ export function ProfilePage() {
   };
 
   if (isMe && isAuthLoading) {
-    return <div className="px-4 pt-16 text-sm text-gray-500">Loading profile...</div>;
+    return <ProfilePageSkeleton />;
   }
 
   if (isMe && !session) {
@@ -200,7 +306,7 @@ export function ProfilePage() {
   }
 
   if (!profile && !error) {
-    return <div className="px-4 pt-16 text-sm text-gray-500">Loading profile...</div>;
+    return <ProfilePageSkeleton />;
   }
 
   if (authError || error || !profile) {
@@ -320,17 +426,30 @@ export function ProfilePage() {
           </div>
 
           <div className="mt-4 grid grid-cols-4 gap-2">
-            {[
-              { label: "Rankings", value: profile.stats.totalRankings },
-              { label: "Followers", value: formatCount(profile.stats.followers) },
-              { label: "Following", value: formatCount(profile.stats.following) },
-              { label: "Likes", value: formatCount(profile.stats.totalLikes) },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <p className="text-base font-black text-gray-900">{stat.value}</p>
-                <p className="text-[10px] font-medium text-gray-400">{stat.label}</p>
-              </div>
-            ))}
+            <div className="text-center">
+              <p className="text-base font-black text-gray-900">{profile.stats.totalRankings}</p>
+              <p className="text-[10px] font-medium text-gray-400">Rankings</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleOpenRelationshipModal("followers")}
+              className="rounded-xl text-center transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+            >
+              <p className="text-base font-black text-gray-900">{formatCount(profile.stats.followers)}</p>
+              <p className="text-[10px] font-medium text-gray-400">Followers</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleOpenRelationshipModal("following")}
+              className="rounded-xl text-center transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+            >
+              <p className="text-base font-black text-gray-900">{formatCount(profile.stats.following)}</p>
+              <p className="text-[10px] font-medium text-gray-400">Following</p>
+            </button>
+            <div className="text-center">
+              <p className="text-base font-black text-gray-900">{formatCount(profile.stats.totalLikes)}</p>
+              <p className="text-[10px] font-medium text-gray-400">Likes</p>
+            </div>
           </div>
         </div>
 
@@ -371,18 +490,16 @@ export function ProfilePage() {
             ) : (
               sortedPosts.map((post) => {
                 const isPinned = pinnedPostId === post.id;
-                const category = categoryMap.get(post.category);
-                const hasCoverImage = hasUsableCoverImage(post.coverImage);
 
-                if (isMe) {
-                  return (
-                    <div key={post.id} className="relative">
-                      {isPinned ? (
-                        <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-3 py-2">
-                          <Pin size={11} className="text-brand-blue" />
-                          <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
-                        </div>
-                      ) : null}
+                return (
+                  <div key={post.id} className="relative">
+                    {isPinned ? (
+                      <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-3 py-2">
+                        <Pin size={11} className="text-brand-blue" />
+                        <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
+                      </div>
+                    ) : null}
+                    {isMe ? (
                       <button
                         onClick={() => void handlePinToggle(post.id)}
                         className={`absolute right-14 z-10 flex h-8 w-8 items-center justify-center rounded-xl shadow-sm transition-all ${
@@ -394,100 +511,40 @@ export function ProfilePage() {
                       >
                         {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
                       </button>
-                      <RankPostCard
-                        post={post}
-                        onProfileClick={(user) => router.push(`/profile/${user.username}`)}
-                        onTopicClick={(postId) => router.push(`/topic/${postId}`)}
-                        onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
-                        onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
-                        currentUser={session?.user}
-                        isAuthLoading={isAuthLoading}
-                        onPostUpdated={(updatedPost) => {
-                          setProfile((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  rankings: current.rankings.map((currentPost) =>
-                                    currentPost.id === updatedPost.id ? updatedPost : currentPost,
-                                  ),
-                                }
-                              : current,
-                          );
-                        }}
-                        onPostDeleted={(postId) => {
-                          setProfile((current) =>
-                            current
-                              ? {
-                                  ...current,
-                                  rankings: current.rankings.filter((currentPost) => currentPost.id !== postId),
-                                  pinnedPostId: current.pinnedPostId === postId ? null : current.pinnedPostId,
-                                }
-                              : current,
-                          );
-                          setPinnedPostId((current) => (current === postId ? null : current));
-                        }}
-                      />
-                    </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={post.id}
-                    className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${
-                      isPinned ? "border-brand-blue/35 ring-1 ring-brand-blue/25" : "border-gray-100"
-                    }`}
-                  >
-                    {isPinned ? (
-                      <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-0">
-                        <Pin size={11} className="text-brand-blue" />
-                        <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
-                      </div>
                     ) : null}
-                    <div className="relative">
-                      {hasCoverImage ? (
-                        <>
-                          <div className="relative h-28 w-full">
-                            <Image src={post.coverImage} alt={post.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 448px" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-                          </div>
-                          <div className="absolute bottom-0 left-0 p-3">
-                            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white/70">
-                              {category?.emoji} {category?.name}
-                            </span>
-                            <h3 className="mt-1 text-sm font-bold text-white">{post.title}</h3>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="border-b border-gray-100 p-3">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] ${category?.color || "bg-gray-100 text-gray-500"}`}>
-                            {category?.emoji} {category?.name}
-                          </span>
-                          <h3 className="mt-1.5 text-sm font-black text-gray-900">{post.title}</h3>
-                        </div>
-                      )}
-                      {isMe ? (
-                        <button
-                          onClick={() => void handlePinToggle(post.id)}
-                          className={`absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl shadow-sm transition-all ${
-                            isPinned ? "bg-brand-blue/100 text-white" : "bg-black/40 text-white hover:bg-black/60"
-                          }`}
-                          title={isPinned ? "Unpin" : "Pin to profile"}
-                        >
-                          {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="p-3">
-                      <TierListDisplay tiers={post.tiers} tierRows={post.tierRows} compact />
-                      <div className="mt-2.5 flex items-center gap-4 text-xs text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <Heart size={12} className="text-red-400" />
-                          {formatCount(post.likes)} likes
-                        </span>
-                        <span>{post.createdAt}</span>
-                      </div>
-                    </div>
+                    <RankPostCard
+                      post={post}
+                      onProfileClick={(user) => router.push(`/profile/${user.username}`)}
+                      onTopicClick={(postId) => router.push(`/topic/${postId}`)}
+                      onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+                      onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
+                      currentUser={session?.user}
+                      isAuthLoading={isAuthLoading}
+                      onPostUpdated={(updatedPost) => {
+                        setProfile((current) =>
+                          current
+                            ? {
+                                ...current,
+                                rankings: current.rankings.map((currentPost) =>
+                                  currentPost.id === updatedPost.id ? updatedPost : currentPost,
+                                ),
+                              }
+                            : current,
+                        );
+                      }}
+                      onPostDeleted={(postId) => {
+                        setProfile((current) =>
+                          current
+                            ? {
+                                ...current,
+                                rankings: current.rankings.filter((currentPost) => currentPost.id !== postId),
+                                pinnedPostId: current.pinnedPostId === postId ? null : current.pinnedPostId,
+                              }
+                            : current,
+                        );
+                        setPinnedPostId((current) => (current === postId ? null : current));
+                      }}
+                    />
                   </div>
                 );
               })
@@ -619,6 +676,115 @@ export function ProfilePage() {
           </div>
         ) : null}
       </div>
+
+      {relationshipModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-3 pb-3 backdrop-blur-sm sm:items-center sm:pb-0"
+          role="dialog"
+          aria-modal="true"
+          aria-label={relationshipModal === "followers" ? "Followers list" : "Following list"}
+          onClick={() => setRelationshipModal(null)}
+        >
+          <div
+            className="max-h-[78vh] w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue">
+                  <Users size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-gray-900">
+                    {relationshipModal === "followers" ? "Followers" : "Following"}
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    {isRelationshipLoading
+                      ? "Loading people..."
+                      : `${formatCount(relationshipTotal)} ${relationshipTotal === 1 ? "person" : "people"}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRelationshipModal(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                aria-label="Close list"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="max-h-[62vh] overflow-y-auto px-3 py-3">
+              {isRelationshipLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="flex items-center gap-3 rounded-2xl p-2">
+                      <ProfileSkeletonBlock className="h-11 w-11" />
+                      <div className="flex-1 space-y-2">
+                        <ProfileSkeletonBlock className="h-4 w-32" />
+                        <ProfileSkeletonBlock className="h-3 w-20" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : relationshipError ? (
+                <div className="rounded-2xl bg-red-50 px-4 py-5 text-center text-sm text-red-500">
+                  {relationshipError}
+                </div>
+              ) : relationshipUsers.length === 0 ? (
+                <div className="rounded-2xl bg-gray-50 px-4 py-8 text-center">
+                  <p className="text-sm font-bold text-gray-700">No people to show yet</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-400">
+                    New in-app connections will appear here once people follow each other.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {relationshipUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      onClick={() => {
+                        setRelationshipModal(null);
+                        router.push(`/profile/${user.username}`);
+                      }}
+                      className="flex w-full items-center gap-3 rounded-2xl p-2 text-left transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+                    >
+                      <Image
+                        src={user.avatar}
+                        alt={user.displayName}
+                        width={44}
+                        height={44}
+                        className="h-11 w-11 rounded-full object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="truncate text-sm font-black text-gray-900">{user.displayName}</p>
+                          {user.verified ? (
+                            <span className="rounded-full bg-brand-blue/15 px-1.5 py-0.5 text-[10px] font-bold text-brand-blue">
+                              ✓
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="truncate text-xs text-gray-400">@{user.username}</p>
+                      </div>
+                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-bold text-gray-500">
+                        View
+                      </span>
+                    </button>
+                  ))}
+                  {relationshipTotal > relationshipUsers.length ? (
+                    <p className="px-2 pt-2 text-center text-[11px] text-gray-400">
+                      Showing {relationshipUsers.length} of {formatCount(relationshipTotal)} people
+                    </p>
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

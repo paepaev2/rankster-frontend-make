@@ -10,6 +10,7 @@ import type {
   NotificationSocketEvent,
   NotificationsResponse,
   Comment,
+  ProfileFollowListResponse,
   ProfileResponse,
   RanksterNotification,
   RankPost,
@@ -392,6 +393,14 @@ export async function unfollowUser(username: string) {
   return apiFetch<{ isFollowing: boolean }>(`/profile/${encodeURIComponent(username)}/follow`, {
     method: "DELETE",
   });
+}
+
+export async function fetchProfileFollowers(username: string) {
+  return apiFetch<ProfileFollowListResponse>(`/profile/${encodeURIComponent(username)}/followers`, {}, false);
+}
+
+export async function fetchProfileFollowing(username: string) {
+  return apiFetch<ProfileFollowListResponse>(`/profile/${encodeURIComponent(username)}/following`, {}, false);
 }
 
 export async function pinProfilePost(postId: string) {

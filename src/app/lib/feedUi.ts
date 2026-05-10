@@ -175,6 +175,11 @@ export interface ProfileResponse {
   isFollowing: boolean;
 }
 
+export interface ProfileFollowListResponse {
+  items: User[];
+  total: number;
+}
+
 export interface SearchOverviewResponse {
   users: User[];
   topics: TrendingTopic[];
