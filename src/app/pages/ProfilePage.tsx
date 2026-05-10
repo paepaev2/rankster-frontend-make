@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Settings, Share2, UserCheck, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Search, Settings, Share2, UserCheck, UserPlus, Users, X } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
 import { hasUsableCoverImage, type ProfileResponse, type RankPost, type User } from "../lib/feedUi";
 import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
@@ -110,6 +110,7 @@ export function ProfilePage() {
   const [relationshipModal, setRelationshipModal] = useState<RelationshipKind | null>(null);
   const [relationshipUsers, setRelationshipUsers] = useState<User[]>([]);
   const [relationshipTotal, setRelationshipTotal] = useState(0);
+  const [relationshipQuery, setRelationshipQuery] = useState("");
   const [isRelationshipLoading, setIsRelationshipLoading] = useState(false);
   const [relationshipError, setRelationshipError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -161,6 +162,21 @@ export function ProfilePage() {
       ...profile.rankings.filter((post) => post.id !== pinnedPostId),
     ];
   }, [pinnedPostId, profile]);
+
+  const filteredRelationshipUsers = useMemo(() => {
+    const query = relationshipQuery.trim().toLowerCase();
+    if (!query) {
+      return relationshipUsers;
+    }
+
+    return relationshipUsers.filter((user) => {
+      return (
+        user.displayName.toLowerCase().includes(query) ||
+        user.username.toLowerCase().includes(query) ||
+        user.bio.toLowerCase().includes(query)
+      );
+    });
+  }, [relationshipQuery, relationshipUsers]);
 
   const handleFollowToggle = async () => {
     if (!profile || isMe || isFollowUpdating) {
@@ -244,6 +260,7 @@ export function ProfilePage() {
     setRelationshipModal(kind);
     setRelationshipUsers([]);
     setRelationshipTotal(0);
+    setRelationshipQuery("");
     setRelationshipError(null);
     setIsRelationshipLoading(true);
 
@@ -679,26 +696,21 @@ export function ProfilePage() {
 
       {relationshipModal ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-3 pb-3 backdrop-blur-sm sm:items-center sm:pb-0"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/45 px-3 py-[calc(env(safe-area-inset-top)+0.75rem)] backdrop-blur-sm sm:px-6"
           role="dialog"
           aria-modal="true"
           aria-label={relationshipModal === "followers" ? "Followers list" : "Following list"}
           onClick={() => setRelationshipModal(null)}
         >
           <div
-            className="max-h-[78vh] w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="flex h-[min(640px,calc(100dvh-2rem))] w-full max-w-md flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue">
-                  <Users size={18} />
-                </div>
                 <div>
-                  <h3 className="text-sm font-black text-gray-900">
-                    {relationshipModal === "followers" ? "Followers" : "Following"}
-                  </h3>
-                  <p className="text-xs text-gray-400">
+                  <h3 className="text-base font-black text-gray-900">@{profileUser.username}</h3>
+                  <p className="text-xs font-medium text-gray-400">
                     {isRelationshipLoading
                       ? "Loading people..."
                       : `${formatCount(relationshipTotal)} ${relationshipTotal === 1 ? "person" : "people"}`}
@@ -715,7 +727,36 @@ export function ProfilePage() {
               </button>
             </div>
 
-            <div className="max-h-[62vh] overflow-y-auto px-3 py-3">
+            <div className="grid grid-cols-2 border-b border-gray-100 px-3 pt-2">
+              {(["followers", "following"] as const).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  onClick={() => void handleOpenRelationshipModal(kind)}
+                  className={`border-b-2 px-3 py-3 text-sm font-black transition-colors ${
+                    relationshipModal === kind
+                      ? "border-gray-900 text-gray-900"
+                      : "border-transparent text-gray-400 hover:text-gray-700"
+                  }`}
+                >
+                  {kind === "followers" ? "Followers" : "Following"}
+                </button>
+              ))}
+            </div>
+
+            <div className="border-b border-gray-100 px-4 py-3">
+              <label className="flex items-center gap-2 rounded-2xl bg-gray-100 px-3 py-2.5 text-gray-500">
+                <Search size={16} />
+                <input
+                  value={relationshipQuery}
+                  onChange={(event) => setRelationshipQuery(event.target.value)}
+                  placeholder={`Search ${relationshipModal}`}
+                  className="min-w-0 flex-1 bg-transparent text-sm font-medium text-gray-800 outline-none placeholder:text-gray-400"
+                />
+              </label>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
               {isRelationshipLoading ? (
                 <div className="space-y-3">
                   {Array.from({ length: 5 }).map((_, index) => (
@@ -734,14 +775,24 @@ export function ProfilePage() {
                 </div>
               ) : relationshipUsers.length === 0 ? (
                 <div className="rounded-2xl bg-gray-50 px-4 py-8 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand-blue shadow-sm">
+                    <Users size={20} />
+                  </div>
                   <p className="text-sm font-bold text-gray-700">No people to show yet</p>
                   <p className="mt-1 text-xs leading-5 text-gray-400">
                     New in-app connections will appear here once people follow each other.
                   </p>
                 </div>
+              ) : filteredRelationshipUsers.length === 0 ? (
+                <div className="rounded-2xl bg-gray-50 px-4 py-8 text-center">
+                  <p className="text-sm font-bold text-gray-700">No matches</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-400">
+                    Try a display name or username from this list.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-1">
-                  {relationshipUsers.map((user) => (
+                  {filteredRelationshipUsers.map((user) => (
                     <button
                       key={user.id}
                       type="button"
