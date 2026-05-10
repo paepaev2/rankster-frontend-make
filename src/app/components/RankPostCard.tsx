@@ -915,14 +915,14 @@ export function RankPostCard({
                   <button
                     type="button"
                     onClick={() => onProfileClick?.(comment.user)}
-                    className="font-semibold text-gray-800 transition-colors hover:text-brand-blue focus:outline-none focus:text-brand-blue"
+                    className="text-xs font-semibold text-gray-800 transition-colors hover:text-brand-blue focus:outline-none focus:text-brand-blue"
                   >
                     {comment.user.username}
                   </button>{" "}
                   <button
                     type="button"
                     onClick={() => setShowComments(true)}
-                    className="text-left transition-colors hover:text-gray-800 focus:outline-none focus:text-gray-800"
+                    className="text-left text-xs leading-snug transition-colors hover:text-gray-800 focus:outline-none focus:text-gray-800"
                   >
                     {comment.text}
                   </button>
