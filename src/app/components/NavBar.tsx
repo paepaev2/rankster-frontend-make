@@ -86,7 +86,7 @@ export function NavBar() {
               className="flex flex-col items-center justify-center gap-0.5 min-w-[52px] h-full relative"
             >
               {primary ? (
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${isActive ? "bg-violet-600 scale-95" : "bg-violet-500 hover:bg-violet-600"}`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${isActive ? "bg-brand-blue scale-95" : "bg-brand-blue/100 hover:bg-brand-blue"}`}>
                   <Icon size={22} className="text-white" />
                 </div>
               ) : (
@@ -94,7 +94,7 @@ export function NavBar() {
                   <div className="relative">
                     <Icon
                       size={22}
-                      className={`transition-colors ${isActive ? "text-violet-600" : "text-gray-400"}`}
+                      className={`transition-colors ${isActive ? "text-brand-blue" : "text-gray-400"}`}
                       strokeWidth={isActive ? 2.5 : 1.8}
                     />
                     {badge > 0 ? (
@@ -106,11 +106,11 @@ export function NavBar() {
                       </span>
                     ) : null}
                   </div>
-                  <span className={`text-[10px] font-medium transition-colors ${isActive ? "text-violet-600" : "text-gray-400"}`}>
+                  <span className={`text-[10px] font-medium transition-colors ${isActive ? "text-brand-blue" : "text-gray-400"}`}>
                     {label}
                   </span>
                   {isActive && (
-                    <span className="absolute top-1 w-4 h-0.5 bg-violet-500 rounded-full" />
+                    <span className="absolute top-1 w-4 h-0.5 bg-brand-blue/100 rounded-full" />
                   )}
                 </>
               )}

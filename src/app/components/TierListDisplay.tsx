@@ -14,8 +14,8 @@ const TIER_COLOR_SEQUENCE = [
   TIER_COLORS.B,
   TIER_COLORS.C,
   TIER_COLORS.D,
-  { bg: "bg-purple-500", text: "text-white", border: "border-purple-600" },
-  { bg: "bg-pink-500", text: "text-white", border: "border-pink-600" },
+  { bg: "bg-brand-blue", text: "text-white", border: "border-brand-blue-dark" },
+  { bg: "bg-brand-yellow", text: "text-white", border: "border-brand-yellow" },
   { bg: "bg-teal-500", text: "text-white", border: "border-teal-600" },
 ];
 

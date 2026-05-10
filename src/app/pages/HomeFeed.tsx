@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Trophy, Flame } from "lucide-react";
+import { Bell, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
 import { AppErrorState, FeedSkeleton } from "../components/AppStateViews";
+import { AppLogo } from "../components/AppLogo";
 import {
   type FeedScope,
   fetchMainFeed,
@@ -112,15 +113,13 @@ export function HomeFeed() {
         <div className="px-4 pt-12 pb-0">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-violet-600 flex items-center justify-center">
-                <Trophy size={16} className="text-white" />
-              </div>
+              <AppLogo />
               <span className="text-xl font-black text-gray-900 tracking-tight">Rankster</span>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => navigate("/leaderboard")}
-                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-violet-50 text-violet-500 transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-brand-blue/10 text-brand-blue transition-colors"
               >
                 <Flame size={20} />
               </button>
@@ -146,7 +145,7 @@ export function HomeFeed() {
                 onClick={() => setActiveTab(tab.scope)}
                 className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 ${
                   activeTab === tab.scope
-                    ? "text-violet-600 border-violet-600"
+                    ? "text-brand-blue border-brand-blue"
                     : "text-gray-400 border-transparent hover:text-gray-600"
                 }`}
               >
@@ -205,7 +204,7 @@ export function HomeFeed() {
             <button
               onClick={() => void loadFeed(activeTab, nextCursor)}
               disabled={isLoadingMore}
-              className="px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-violet-300 hover:text-violet-600 transition-all shadow-sm disabled:opacity-60"
+              className="px-6 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:border-brand-blue/35 hover:text-brand-blue transition-all shadow-sm disabled:opacity-60"
             >
               {isLoadingMore ? "Loading..." : "Load more rankings"}
             </button>

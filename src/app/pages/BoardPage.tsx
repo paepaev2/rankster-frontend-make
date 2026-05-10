@@ -37,7 +37,7 @@ export function BoardPage() {
             </div>
             <button
               onClick={() => router.push("/profile")}
-              className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-violet-200"
+              className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-brand-blue/25"
             >
               <img src={currentUser.avatar} alt="me" className="w-full h-full object-cover" />
             </button>
@@ -45,9 +45,9 @@ export function BoardPage() {
 
           {/* Quick Stats Bar */}
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-violet-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-black text-violet-700">{stats.totalRankings}</p>
-              <p className="text-[10px] text-violet-500 font-medium">Rankings</p>
+            <div className="bg-brand-blue/10 rounded-xl p-3 text-center">
+              <p className="text-lg font-black text-brand-blue-dark">{stats.totalRankings}</p>
+              <p className="text-[10px] text-brand-blue font-medium">Rankings</p>
             </div>
             <div className="bg-red-50 rounded-xl p-3 text-center">
               <p className="text-lg font-black text-red-500">{(stats.totalLikes / 1000).toFixed(1)}k</p>
@@ -67,7 +67,7 @@ export function BoardPage() {
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
                   activeTab === tab
-                    ? "text-violet-600 border-violet-600"
+                    ? "text-brand-blue border-brand-blue"
                     : "text-gray-400 border-transparent"
                 }`}
               >
@@ -85,11 +85,11 @@ export function BoardPage() {
             {/* Pinned Section */}
             <div>
               <div className="flex items-center gap-1.5 mb-2">
-                <Pin size={13} className="text-violet-500" />
+                <Pin size={13} className="text-brand-blue" />
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Pinned</span>
               </div>
               {myPosts.slice(0, 1).map((post) => (
-                <div key={post.id} className="bg-white rounded-2xl overflow-hidden border-2 border-violet-200 shadow-sm">
+                <div key={post.id} className="bg-white rounded-2xl overflow-hidden border-2 border-brand-blue/25 shadow-sm">
                   <div className="relative">
                     <img src={post.coverImage} alt={post.title} className="w-full h-28 object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
@@ -97,7 +97,7 @@ export function BoardPage() {
                       <h3 className="text-white font-bold text-sm">{post.title}</h3>
                     </div>
                     <div className="absolute top-2 right-2">
-                      <span className="bg-violet-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="bg-brand-blue/100 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Pin size={9} />
                         Pinned
                       </span>
@@ -111,7 +111,7 @@ export function BoardPage() {
                         {(post.likes / 1000).toFixed(1)}k
                       </span>
                       <span className="flex items-center gap-1">
-                        <Users size={12} className="text-violet-400" />
+                        <Users size={12} className="text-brand-blue/70" />
                         {(post.participantCount / 1000).toFixed(1)}k ranked
                       </span>
                       {post.isPublic ? (
@@ -137,7 +137,7 @@ export function BoardPage() {
                 <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">All Rankings</span>
                 <button
                   onClick={() => router.push("/create")}
-                  className="text-xs text-violet-500 font-semibold"
+                  className="text-xs text-brand-blue font-semibold"
                 >
                   + New
                 </button>
@@ -158,7 +158,7 @@ export function BoardPage() {
                           {(post.likes / 1000).toFixed(1)}k
                         </span>
                         <span className="text-xs text-gray-500 flex items-center gap-0.5">
-                          <Users size={11} className="text-violet-400" />
+                          <Users size={11} className="text-brand-blue/70" />
                           {(post.participantCount / 1000).toFixed(1)}k
                         </span>
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${post.isPublic ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
@@ -170,7 +170,7 @@ export function BoardPage() {
                 ))}
                 <button
                   onClick={() => router.push("/create")}
-                  className="w-full border-2 border-dashed border-violet-200 rounded-2xl py-6 flex flex-col items-center gap-1.5 text-violet-400 hover:border-violet-400 hover:text-violet-600 transition-all"
+                  className="w-full border-2 border-dashed border-brand-blue/25 rounded-2xl py-6 flex flex-col items-center gap-1.5 text-brand-blue/70 hover:border-brand-blue/55 hover:text-brand-blue transition-all"
                 >
                   <span className="text-2xl">+</span>
                   <span className="text-sm font-semibold">Create New Ranking</span>
@@ -208,17 +208,17 @@ export function BoardPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <BarChart2 size={18} className="text-violet-500" />
+                <BarChart2 size={18} className="text-brand-blue" />
                 <h3 className="font-bold text-gray-900">Your Statistics</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Total Rankings", value: stats.totalRankings, icon: "🏆", color: "text-violet-600" },
+                  { label: "Total Rankings", value: stats.totalRankings, icon: "🏆", color: "text-brand-blue" },
                   { label: "Total Likes Received", value: `${(stats.totalLikes / 1000).toFixed(1)}k`, icon: "❤️", color: "text-red-500" },
                   { label: "Total Shares", value: stats.totalShares, icon: "🔄", color: "text-green-500" },
-                  { label: "Avg Likes/Ranking", value: stats.avgLikes, icon: "📊", color: "text-blue-500" },
+                  { label: "Avg Likes/Ranking", value: stats.avgLikes, icon: "📊", color: "text-brand-blue" },
                   { label: "Top Category", value: stats.topCategory, icon: "🎵", color: "text-orange-500" },
-                  { label: "Rank Score", value: `${(stats.rankScore / 1000).toFixed(1)}k`, icon: "⚡", color: "text-yellow-500" },
+                  { label: "Rank Score", value: `${(stats.rankScore / 1000).toFixed(1)}k`, icon: "⚡", color: "text-brand-yellow" },
                 ].map((stat) => (
                   <div key={stat.label} className="bg-gray-50 rounded-xl p-3">
                     <div className="text-xl mb-1">{stat.icon}</div>
@@ -247,7 +247,7 @@ export function BoardPage() {
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full">
                       <div
-                        className="h-full bg-violet-500 rounded-full"
+                        className="h-full bg-brand-blue/100 rounded-full"
                         style={{ width: `${cat.pct}%` }}
                       />
                     </div>

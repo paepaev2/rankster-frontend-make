@@ -74,7 +74,7 @@ export function LeaderboardPage() {
                 key={filter}
                 onClick={() => setTimeFilter(filter)}
                 className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                  timeFilter === filter ? "bg-white text-violet-700 shadow-sm" : "text-gray-500"
+                  timeFilter === filter ? "bg-white text-brand-blue-dark shadow-sm" : "text-gray-500"
                 }`}
               >
                 {filter}
@@ -86,7 +86,7 @@ export function LeaderboardPage() {
             <button
               onClick={() => setCategoryFilter("All")}
               className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                categoryFilter === "All" ? "bg-violet-600 text-white" : "border border-gray-200 bg-white text-gray-500"
+                categoryFilter === "All" ? "bg-brand-blue text-white" : "border border-gray-200 bg-white text-gray-500"
               }`}
             >
               All
@@ -97,7 +97,7 @@ export function LeaderboardPage() {
                 onClick={() => setCategoryFilter(category.id)}
                 className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                   categoryFilter === category.id
-                    ? "bg-violet-600 text-white"
+                    ? "bg-brand-blue text-white"
                     : "border border-gray-200 bg-white text-gray-500"
                 }`}
               >
@@ -130,21 +130,21 @@ export function LeaderboardPage() {
             </div>
 
             {currentUserEntry ? (
-              <div className="mt-4 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4">
+              <div className="mt-4 rounded-2xl border-2 border-brand-blue/25 bg-brand-blue/10 p-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-violet-600">#{currentUserEntry.rank}</span>
+                  <span className="text-sm font-bold text-brand-blue">#{currentUserEntry.rank}</span>
                   <Image
                     src={currentUserEntry.user.avatar}
                     alt={currentUserEntry.user.displayName}
                     width={40}
                     height={40}
-                    className="h-10 w-10 rounded-xl object-cover ring-2 ring-violet-400"
+                    className="h-10 w-10 rounded-xl object-cover ring-2 ring-brand-blue/55"
                   />
                   <div>
-                    <p className="text-sm font-bold text-violet-800">
+                    <p className="text-sm font-bold text-brand-blue-dark">
                       You — {currentUserEntry.user.displayName}
                     </p>
-                    <p className="text-xs text-violet-500">
+                    <p className="text-xs text-brand-blue">
                       {formatPoints(currentUserEntry.score)} pts · Keep ranking to climb!
                     </p>
                   </div>
@@ -165,24 +165,24 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
     <div className="mb-6 flex items-end justify-center gap-3 rounded-2xl border border-gray-100 bg-white px-4 py-6 shadow-sm">
       <PodiumSpot entry={second} place={2} heightClass="h-16" ringClass="ring-gray-300" badgeClass="bg-gray-400" />
       <div className="flex flex-1 flex-col items-center gap-2">
-        <Crown size={22} className="text-yellow-500" />
+        <Crown size={22} className="text-brand-yellow" />
         <div className="relative">
           <Image
             src={first.user.avatar}
             alt={first.user.displayName}
             width={72}
             height={72}
-            className="h-[72px] w-[72px] rounded-2xl object-cover ring-4 ring-yellow-400"
+            className="h-[72px] w-[72px] rounded-2xl object-cover ring-4 ring-brand-yellow"
           />
-          <span className="absolute right-[-4px] bottom-[-8px] flex h-7 w-7 items-center justify-center rounded-full bg-yellow-400 text-sm font-black text-white">
+          <span className="absolute right-[-4px] bottom-[-8px] flex h-7 w-7 items-center justify-center rounded-full bg-brand-yellow text-sm font-black text-white">
             1
           </span>
         </div>
         <div className="text-center">
           <p className="text-xs font-bold text-gray-900">{first.user.username}</p>
-          <p className="text-[10px] font-semibold text-yellow-600">{formatPoints(first.score)} pts</p>
+          <p className="text-[10px] font-semibold text-brand-yellow-dark">{formatPoints(first.score)} pts</p>
         </div>
-        <div className="flex h-24 w-full items-end justify-center rounded-t-lg bg-yellow-400 pb-2">
+        <div className="flex h-24 w-full items-end justify-center rounded-t-lg bg-brand-yellow pb-2">
           <span className="font-black text-white">👑</span>
         </div>
       </div>
@@ -252,10 +252,10 @@ function LeaderboardRow({
       : "text-red-500";
 
   return (
-    <div className={`flex items-center gap-3 border-b border-gray-50 px-4 py-3 last:border-0 ${isCurrentUser ? "bg-violet-50" : ""}`}>
+    <div className={`flex items-center gap-3 border-b border-gray-50 px-4 py-3 last:border-0 ${isCurrentUser ? "bg-brand-blue/10" : ""}`}>
       <div className="flex w-8 items-center justify-center">
         {index < 3 ? (
-          <Trophy size={18} className={index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-orange-400"} />
+          <Trophy size={18} className={index === 0 ? "text-brand-yellow" : index === 1 ? "text-gray-400" : "text-orange-400"} />
         ) : (
           <span className="text-sm font-bold text-gray-400">#{entry.rank}</span>
         )}
@@ -266,18 +266,18 @@ function LeaderboardRow({
         alt={entry.user.displayName}
         width={40}
         height={40}
-        className={`h-10 w-10 rounded-xl object-cover ${isCurrentUser ? "ring-2 ring-violet-400" : ""}`}
+        className={`h-10 w-10 rounded-xl object-cover ${isCurrentUser ? "ring-2 ring-brand-blue/55" : ""}`}
       />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className={`truncate text-sm font-bold ${isCurrentUser ? "text-violet-700" : "text-gray-900"}`}>
+          <span className={`truncate text-sm font-bold ${isCurrentUser ? "text-brand-blue-dark" : "text-gray-900"}`}>
             {entry.user.displayName}
           </span>
           {isCurrentUser ? (
-            <span className="rounded-full bg-violet-200 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">You</span>
+            <span className="rounded-full bg-brand-blue/20 px-1.5 py-0.5 text-[10px] font-bold text-brand-blue-dark">You</span>
           ) : null}
-          {entry.user.verified ? <span className="text-xs text-violet-500">✓</span> : null}
+          {entry.user.verified ? <span className="text-xs text-brand-blue">✓</span> : null}
         </div>
         <p className="text-xs text-gray-400">@{entry.user.username}</p>
       </div>

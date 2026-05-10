@@ -100,7 +100,7 @@ export function SearchPage() {
                 setQuery(event.target.value);
               }}
               placeholder="Search topics, people, categories..."
-              className="w-full rounded-2xl bg-gray-100 py-3 pr-10 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="w-full rounded-2xl bg-gray-100 py-3 pr-10 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
             />
             {query ? (
               <button
@@ -127,7 +127,7 @@ export function SearchPage() {
               {visibleUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-violet-200"
+                  className="flex w-full items-center gap-3 rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25"
                 >
                   <button
                     onClick={() => router.push(`/profile/${user.username}`)}
@@ -143,7 +143,7 @@ export function SearchPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
                         <span className="truncate text-sm font-semibold text-gray-900">{user.displayName}</span>
-                        {user.verified ? <span className="text-xs text-violet-500">✓</span> : null}
+                        {user.verified ? <span className="text-xs text-brand-blue">✓</span> : null}
                       </div>
                       <span className="text-xs text-gray-400">@{user.username}</span>
                       <div className="mt-0.5 flex items-center gap-2">
@@ -155,7 +155,7 @@ export function SearchPage() {
                   </button>
                   <button
                     onClick={() => router.push(messagePathForUsername(user.username))}
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 transition-colors hover:bg-violet-100"
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15"
                     aria-label={`Message ${user.displayName}`}
                   >
                     <MessageCircle size={18} />
@@ -170,7 +170,7 @@ export function SearchPage() {
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-bold tracking-wider text-gray-500 uppercase">Categories</h2>
             {activeCategory ? (
-              <button onClick={() => setActiveCategory(null)} className="text-xs font-medium text-violet-500">
+              <button onClick={() => setActiveCategory(null)} className="text-xs font-medium text-brand-blue">
                 Clear filter
               </button>
             ) : null}
@@ -182,7 +182,7 @@ export function SearchPage() {
                 onClick={() => setActiveCategory(activeCategory === category.id ? null : category.id)}
                 className={`flex items-center gap-2.5 rounded-2xl border-2 p-3 text-left transition-all ${
                   activeCategory === category.id
-                    ? "border-violet-400 bg-violet-50"
+                    ? "border-brand-blue/55 bg-brand-blue/10"
                     : "border-transparent bg-white shadow-sm hover:border-gray-200"
                 }`}
               >
@@ -239,7 +239,7 @@ function TopicCard({
   return (
     <button
       onClick={onOpen}
-      className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-violet-200 hover:shadow-md"
+      className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-brand-blue/25 hover:shadow-md"
     >
       <div className="relative h-20 w-20 flex-shrink-0">
         <Image src={topic.coverImage} alt={topic.title} fill className="object-cover" sizes="80px" />
@@ -248,7 +248,7 @@ function TopicCard({
         </div>
       </div>
       <div className="flex-1 py-3 pr-3">
-        <span className="text-xs font-medium text-violet-500">
+        <span className="text-xs font-medium text-brand-blue">
           {category?.emoji} {category?.name}
         </span>
         <h3 className="mt-0.5 text-sm leading-tight font-bold text-gray-900">{topic.title}</h3>

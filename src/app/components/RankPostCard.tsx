@@ -90,11 +90,11 @@ async function tryLoadImage(src: string): Promise<HTMLImageElement | null> {
 const TIER_HEX: Record<string, string> = {
   S: "#ef4444",
   A: "#f97316",
-  B: "#d97706",
+  B: "#fcca00",
   C: "#16a34a",
-  D: "#2563eb",
+  D: "#1e72c0",
 };
-const TIER_HEX_SEQUENCE = ["#ef4444", "#f97316", "#d97706", "#16a34a", "#2563eb", "#8b5cf6", "#ec4899", "#14b8a6"];
+const TIER_HEX_SEQUENCE = ["#ef4444", "#f97316", "#fcca00", "#16a34a", "#1e72c0", "#155a99", "#fcca00", "#14b8a6"];
 
 const FONT = (size: number, weight: "normal" | "bold" = "normal") =>
   `${weight === "bold" ? "bold " : ""}${size}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
@@ -120,9 +120,9 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
 
   // ── Background ──────────────────────────────────────────────────────────────
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, "#1e1b4b");   // indigo-950
-  bg.addColorStop(0.5, "#2e1065"); // violet-950
-  bg.addColorStop(1, "#0f0a1e");
+  bg.addColorStop(0, "#1e72c0");
+  bg.addColorStop(0.58, "#155a99");
+  bg.addColorStop(1, "#0b2a47");
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
@@ -131,18 +131,27 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
   for (const [cx, cy, cr] of [[180, 200, 280], [950, 400, 200], [100, 1700, 350], [1000, 1600, 180]] as [number, number, number][]) {
     ctx.beginPath();
     ctx.arc(cx, cy, cr, 0, Math.PI * 2);
-    ctx.fillStyle = "#7c3aed";
+    ctx.fillStyle = "#fcca00";
     ctx.fill();
   }
   ctx.globalAlpha = 1;
 
   // ── App logo / header ───────────────────────────────────────────────────────
-  ctx.fillStyle = "#7c3aed";
+  ctx.fillStyle = "#ffffff";
   roundRect(ctx, 80, 80, 90, 90, 22);
   ctx.fill();
-  ctx.font = FONT(52);
+  ctx.fillStyle = "#1e72c0";
+  roundRect(ctx, 96, 126, 22, 30, 5);
+  ctx.fill();
+  roundRect(ctx, 132, 132, 22, 24, 5);
+  ctx.fill();
+  ctx.fillStyle = "#fcca00";
+  roundRect(ctx, 113, 104, 26, 52, 6);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = FONT(20, "bold");
   ctx.textAlign = "center";
-  ctx.fillText("🏆", 125, 148);
+  ctx.fillText("1", 126, 136);
 
   ctx.fillStyle = "#ffffff";
   ctx.font = FONT(64, "bold");
@@ -185,8 +194,8 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
     ctx.drawImage(coverImg, CARD_X, CARD_Y, CARD_W, BANNER_H);
   } else {
     const bannerGrad = ctx.createLinearGradient(CARD_X, CARD_Y, CARD_X + CARD_W, CARD_Y + BANNER_H);
-    bannerGrad.addColorStop(0, "#7c3aed");
-    bannerGrad.addColorStop(1, "#4f46e5");
+    bannerGrad.addColorStop(0, "#1e72c0");
+    bannerGrad.addColorStop(1, "#fcca00");
     ctx.fillStyle = bannerGrad;
     ctx.fillRect(CARD_X, CARD_Y, CARD_W, BANNER_H);
   }
@@ -224,15 +233,15 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
   // Category pill
   const catInfo = CATEGORIES.find((c) => c.id === post.category);
   if (catInfo) {
-    ctx.fillStyle = "#ede9fe"; // violet-100
+    ctx.fillStyle = "rgba(30,114,192,0.12)";
     roundRect(ctx, CARD_X + 40, curY, 0, 48, 24); // width computed below
     const pillText = `${catInfo.emoji}  ${catInfo.name}`;
     ctx.font = FONT(32, "bold");
     const pillW = ctx.measureText(pillText).width + 48;
-    ctx.fillStyle = "#ede9fe";
+    ctx.fillStyle = "rgba(30,114,192,0.12)";
     roundRect(ctx, CARD_X + 40, curY, pillW, 48, 24);
     ctx.fill();
-    ctx.fillStyle = "#5b21b6"; // violet-800
+    ctx.fillStyle = "#155a99";
     ctx.textAlign = "left";
     ctx.fillText(pillText, CARD_X + 64, curY + 34);
     curY += 80;
@@ -291,7 +300,7 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
   const avatarR = 40;
   const avatarX = CARD_X + 40 + avatarR;
   const avatarY = curY + avatarR;
-  ctx.fillStyle = "#7c3aed";
+  ctx.fillStyle = "#1e72c0";
   ctx.beginPath();
   ctx.arc(avatarX, avatarY, avatarR, 0, Math.PI * 2);
   ctx.fill();
@@ -652,10 +661,10 @@ export function RankPostCard({
               alt={post.user.displayName}
               width={40}
               height={40}
-              className="h-10 w-10 rounded-full object-cover ring-2 ring-violet-100"
+              className="h-10 w-10 rounded-full object-cover ring-2 ring-brand-blue/15"
             />
             {post.user.verified && (
-              <span className="absolute -bottom-0.5 -right-0.5 bg-violet-500 rounded-full w-4 h-4 flex items-center justify-center">
+              <span className="absolute -bottom-0.5 -right-0.5 bg-brand-blue/100 rounded-full w-4 h-4 flex items-center justify-center">
                 <span className="text-white text-[8px]">✓</span>
               </span>
             )}
@@ -664,7 +673,7 @@ export function RankPostCard({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => onProfileClick?.(post.user.id)}
-                className="font-semibold text-gray-900 text-sm hover:text-violet-600 transition-colors"
+                className="font-semibold text-gray-900 text-sm hover:text-brand-blue transition-colors"
               >
                 {post.user.displayName}
               </button>
@@ -731,38 +740,38 @@ export function RankPostCard({
       ) : null}
 
       {isEditingPost ? (
-        <form onSubmit={handleSavePost} className="mx-4 mb-3 space-y-3 rounded-2xl border border-violet-100 bg-violet-50/60 p-3">
+        <form onSubmit={handleSavePost} className="mx-4 mb-3 space-y-3 rounded-2xl border border-brand-blue/15 bg-brand-blue/10 p-3">
           <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-brand-blue">
               Title
             </label>
             <input
               value={editTitle}
               onChange={(event) => setEditTitle(event.target.value)}
-              className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-xl border border-brand-blue/15 bg-white px-3 py-2 text-sm font-semibold text-gray-900 outline-none focus:border-brand-blue/35 focus:ring-2 focus:ring-brand-blue/15"
               placeholder="Ranking title"
             />
           </div>
           <div>
-            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+            <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-brand-blue">
               Description
             </label>
             <textarea
               value={editDescription}
               onChange={(event) => setEditDescription(event.target.value)}
-              className="min-h-20 w-full resize-none rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+              className="min-h-20 w-full resize-none rounded-xl border border-brand-blue/15 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-blue/35 focus:ring-2 focus:ring-brand-blue/15"
               placeholder="What is this ranking about?"
             />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-brand-blue">
                 Category
               </label>
               <select
                 value={editCategory}
                 onChange={(event) => setEditCategory(event.target.value)}
-                className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-xl border border-brand-blue/15 bg-white px-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:border-brand-blue/35 focus:ring-2 focus:ring-brand-blue/15"
               >
                 {CATEGORIES.map((option) => (
                   <option key={option.id} value={option.id}>
@@ -772,13 +781,13 @@ export function RankPostCard({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-violet-500">
+              <label className="mb-1 block text-[11px] font-bold uppercase tracking-wide text-brand-blue">
                 Tags
               </label>
               <input
                 value={editTags}
                 onChange={(event) => setEditTags(event.target.value)}
-                className="w-full rounded-xl border border-violet-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-xl border border-brand-blue/15 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-brand-blue/35 focus:ring-2 focus:ring-brand-blue/15"
                 placeholder="anime, sports, food"
               />
             </div>
@@ -788,7 +797,7 @@ export function RankPostCard({
               type="checkbox"
               checked={editIsPublic}
               onChange={(event) => setEditIsPublic(event.target.checked)}
-              className="h-4 w-4 rounded border-violet-200 text-violet-600 focus:ring-violet-500"
+              className="h-4 w-4 rounded border-brand-blue/25 text-brand-blue focus:ring-brand-blue"
             />
             Public post
           </label>
@@ -796,7 +805,7 @@ export function RankPostCard({
             <button
               type="submit"
               disabled={isPostSaving || editTitle.trim() === ""}
-              className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+              className="rounded-xl bg-brand-blue px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
             >
               {isPostSaving ? "Saving..." : "Save changes"}
             </button>
@@ -841,7 +850,7 @@ export function RankPostCard({
         {!expanded && (
           <button
             onClick={() => setExpanded(true)}
-            className="w-full text-center text-xs text-violet-500 font-medium mt-2 py-1 hover:text-violet-700 flex items-center justify-center gap-1"
+            className="w-full text-center text-xs text-brand-blue font-medium mt-2 py-1 hover:text-brand-blue-dark flex items-center justify-center gap-1"
           >
             <ChevronDown size={14} /> Show full tier list
           </button>
@@ -849,7 +858,7 @@ export function RankPostCard({
         {expanded && (
           <button
             onClick={() => setExpanded(false)}
-            className="w-full text-center text-xs text-violet-500 font-medium mt-2 py-1 hover:text-violet-700 flex items-center justify-center gap-1"
+            className="w-full text-center text-xs text-brand-blue font-medium mt-2 py-1 hover:text-brand-blue-dark flex items-center justify-center gap-1"
           >
             <ChevronUp size={14} /> Collapse
           </button>
@@ -866,7 +875,7 @@ export function RankPostCard({
       {/* Tags */}
       <div className="px-4 pt-2 flex flex-wrap gap-1">
         {post.tags.map((tag) => (
-          <span key={tag} className="text-xs text-violet-500 hover:text-violet-700 cursor-pointer">
+          <span key={tag} className="text-xs text-brand-blue hover:text-brand-blue-dark cursor-pointer">
             #{tag}
           </span>
         ))}
@@ -876,7 +885,7 @@ export function RankPostCard({
         <div className="px-4 pt-3">
           <button
             onClick={() => onRankThis(post.id)}
-            className="w-full rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-100"
+            className="w-full rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-4 py-2.5 text-sm font-semibold text-brand-blue-dark transition-colors hover:border-brand-blue/35 hover:bg-brand-blue/15"
           >
             Rank This Yourself
           </button>
@@ -885,8 +894,8 @@ export function RankPostCard({
 
       {/* IG generating overlay */}
       {igState === "generating" && (
-        <div className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100">
-          <Loader2 size={18} className="text-pink-500 animate-spin flex-shrink-0" />
+        <div className="mx-4 mt-3 flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-brand-yellow/15 to-brand-blue/10 rounded-xl border border-brand-yellow/30">
+          <Loader2 size={18} className="text-brand-blue animate-spin flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-gray-800">Creating story card…</p>
             <p className="text-xs text-gray-400">Drawing your tier list as a story-sized image</p>
@@ -899,12 +908,12 @@ export function RankPostCard({
         <div className={`mx-4 mt-3 flex items-start gap-3 px-4 py-3 rounded-xl border ${
           igState === "error"
             ? "bg-red-50 border-red-100"
-            : "bg-gradient-to-r from-pink-50 to-purple-50 border-pink-100"
+            : "bg-gradient-to-r from-brand-yellow/15 to-brand-blue/10 border-brand-yellow/30"
         }`}>
           {igState === "done" && igToastKind === "share-sheet" ? (
-            <Check size={18} className="text-pink-500 flex-shrink-0 mt-0.5" />
+            <Check size={18} className="text-brand-blue flex-shrink-0 mt-0.5" />
           ) : igState === "done" && igToastKind === "download" ? (
-            <Download size={18} className="text-pink-500 flex-shrink-0 mt-0.5" />
+            <Download size={18} className="text-brand-blue flex-shrink-0 mt-0.5" />
           ) : (
             <span className="text-base flex-shrink-0">⚠️</span>
           )}
@@ -934,7 +943,7 @@ export function RankPostCard({
           </button>
           <button
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-violet-500 transition-colors"
+            className="flex items-center gap-1.5 text-gray-400 hover:text-brand-blue transition-colors"
           >
             <MessageCircle size={19} />
             <span className="text-xs font-semibold">{formatCount(comments.length)}</span>
@@ -1011,10 +1020,10 @@ export function RankPostCard({
 
         <button
           onClick={() => toggleSave(post)}
-          className={`transition-colors ${saved ? "text-violet-500" : "text-gray-400 hover:text-violet-500"}`}
+          className={`transition-colors ${saved ? "text-brand-blue" : "text-gray-400 hover:text-brand-blue"}`}
           title={saved ? "Remove from saved" : "Save to rank later"}
         >
-          <Bookmark size={19} className={saved ? "fill-violet-500" : ""} />
+          <Bookmark size={19} className={saved ? "fill-brand-blue" : ""} />
         </button>
       </div>
 
@@ -1081,25 +1090,25 @@ export function RankPostCard({
                 placeholder={`Comment as ${currentUser.displayName}`}
                 value={commentText}
                 onChange={(event) => setCommentText(event.target.value)}
-                className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-700 border border-gray-100 focus:outline-none focus:border-violet-300 focus:ring-1 focus:ring-violet-100"
+                className="flex-1 bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-700 border border-gray-100 focus:outline-none focus:border-brand-blue/35 focus:ring-1 focus:ring-brand-blue/15"
               />
               <button
                 type="submit"
                 disabled={isCommentSubmitting || commentText.trim() === ""}
-                className="rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                className="rounded-xl bg-brand-blue px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
               >
                 {isCommentSubmitting ? "Posting..." : "Post"}
               </button>
             </form>
           ) : (
-            <div className="flex items-center justify-between gap-3 rounded-2xl border border-violet-100 bg-violet-50 px-3 py-3">
+            <div className="flex items-center justify-between gap-3 rounded-2xl border border-brand-blue/15 bg-brand-blue/10 px-3 py-3">
               <div>
-                <p className="text-xs font-bold text-violet-700">Sign in to comment</p>
-                <p className="mt-0.5 text-xs text-violet-500">Join the conversation with your Rankster profile.</p>
+                <p className="text-xs font-bold text-brand-blue-dark">Sign in to comment</p>
+                <p className="mt-0.5 text-xs text-brand-blue">Join the conversation with your Rankster profile.</p>
               </div>
               <a
                 href="/login"
-                className="shrink-0 rounded-xl bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-700"
+                className="shrink-0 rounded-xl bg-brand-blue px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-blue-dark"
               >
                 Log in
               </a>

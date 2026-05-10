@@ -50,7 +50,7 @@ function notificationTone(type: RanksterNotification["type"]) {
     return "bg-sky-50 text-sky-600";
   }
   if (type === "rank") {
-    return "bg-amber-50 text-amber-600";
+    return "bg-brand-yellow/15 text-brand-yellow-dark";
   }
   return "bg-rose-50 text-rose-600";
 }
@@ -243,7 +243,7 @@ export function NotificationsPage() {
           <p className="text-sm text-gray-700">Sign in to see your notifications.</p>
           <button
             onClick={() => router.push("/login")}
-            className="mt-4 rounded-2xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+            className="mt-4 rounded-2xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
           >
             Go to login
           </button>
@@ -273,7 +273,7 @@ export function NotificationsPage() {
             <button
               onClick={() => void handleMarkAllRead()}
               disabled={unreadCount === 0 || isMarkingAll}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 transition-colors hover:bg-violet-100 disabled:opacity-40"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15 disabled:opacity-40"
               aria-label="Mark all notifications as read"
             >
               <CheckCheck size={19} />
@@ -291,7 +291,7 @@ export function NotificationsPage() {
         </div>
       ) : notifications.length === 0 ? (
         <div className="px-4 py-16 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-50 text-violet-500">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-blue/10 text-brand-blue">
             <Bell size={28} />
           </div>
           <h2 className="mt-4 text-lg font-black text-gray-900">No notifications yet</h2>
@@ -343,7 +343,7 @@ export function NotificationsPage() {
                   </div>
                   <p className="mt-1 text-sm leading-5 text-gray-500">{notification.body}</p>
                   {notification.actor ? (
-                    <p className="mt-2 text-xs font-bold text-violet-600">@{notification.actor.username}</p>
+                    <p className="mt-2 text-xs font-bold text-brand-blue">@{notification.actor.username}</p>
                   ) : null}
                 </div>
                 {!notification.read ? <span className="mt-1 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-red-500" /> : null}

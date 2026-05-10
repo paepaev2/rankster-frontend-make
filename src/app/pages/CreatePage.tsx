@@ -33,11 +33,11 @@ type PointerDragHandlers = Pick<
 const TIER_COLOR_PALETTE = [
   "bg-red-500",
   "bg-orange-400",
-  "bg-yellow-400",
+  "bg-brand-yellow",
   "bg-green-500",
-  "bg-blue-500",
-  "bg-purple-500",
-  "bg-pink-500",
+  "bg-brand-blue",
+  "bg-brand-blue",
+  "bg-brand-yellow",
   "bg-teal-500",
 ];
 
@@ -316,7 +316,7 @@ function RankAddItemRow({
             value={rankNewEmoji}
             onChange={(event) => onEmojiChange(event.target.value)}
             placeholder="🎬"
-            className="w-12 rounded-lg border border-gray-100 bg-gray-50 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="w-12 rounded-lg border border-gray-100 bg-gray-50 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
           />
         ) : (
           <div className="flex min-w-0 flex-1 gap-2">
@@ -325,9 +325,9 @@ function RankAddItemRow({
               value={rankNewImageUrl}
               onChange={(event) => onImageUrlChange(event.target.value)}
               placeholder="Image URL"
-              className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
             />
-            <label className="flex flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-violet-100 bg-violet-50 px-3 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-100">
+            <label className="flex flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-brand-blue/15 bg-brand-blue/10 px-3 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/15">
               {isUploadingImage ? "..." : "Upload"}
               <input
                 type="file"
@@ -352,11 +352,11 @@ function RankAddItemRow({
             onChange={(event) => onNameChange(event.target.value)}
             onKeyDown={(event) => event.key === "Enter" && onAddItem()}
             placeholder="Item name"
-            className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+            className="min-w-0 flex-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
           />
           <button
             onClick={onAddItem}
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white transition-colors hover:bg-violet-600"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-brand-blue/100 text-white transition-colors hover:bg-brand-blue"
           >
             <Plus size={16} />
           </button>
@@ -800,7 +800,7 @@ export function CreatePage() {
             {editingPostId ? "Edit Tier List" : mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
           </h1>
           {mode !== "choose" ? (
-            <button onClick={handleReset} className="text-sm font-medium text-violet-500">
+            <button onClick={handleReset} className="text-sm font-medium text-brand-blue">
               {editingPostId ? "Cancel" : "Reset"}
             </button>
           ) : (
@@ -815,7 +815,7 @@ export function CreatePage() {
 
           <button
             onClick={() => setMode("create-new")}
-            className="group w-full rounded-2xl border-2 border-violet-200 bg-white p-5 text-left shadow-sm transition-all hover:border-violet-400"
+            className="group w-full rounded-2xl border-2 border-brand-blue/25 bg-white p-5 text-left shadow-sm transition-all hover:border-brand-blue/55"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -823,7 +823,7 @@ export function CreatePage() {
                 <h3 className="font-bold text-gray-900">Create New Tier List</h3>
                 <p className="mt-1 text-sm text-gray-500">Add your own topic, items, and share with the community</p>
               </div>
-              <ChevronRight size={20} className="text-violet-400 transition-colors group-hover:text-violet-600" />
+              <ChevronRight size={20} className="text-brand-blue/70 transition-colors group-hover:text-brand-blue" />
             </div>
           </button>
 
@@ -851,7 +851,7 @@ export function CreatePage() {
                   onClick={() => {
                     void loadSourcePost(topic.postId ?? topic.id);
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-violet-200"
+                  className="flex w-full items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25"
                 >
                   <img src={topic.coverImage} alt={topic.title} className="h-10 w-10 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1">
@@ -875,7 +875,7 @@ export function CreatePage() {
               value={searchTopic}
               onChange={(event) => setSearchTopic(event.target.value)}
               placeholder="Search existing topics..."
-              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="w-full rounded-2xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
             />
           </div>
 
@@ -886,11 +886,11 @@ export function CreatePage() {
                 onClick={() => {
                   void loadSourcePost(topic.postId ?? topic.id);
                 }}
-                className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-violet-200"
+                className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-sm transition-all hover:border-brand-blue/25"
               >
                 <img src={topic.coverImage} alt={topic.title} className="h-20 w-20 flex-shrink-0 object-cover" />
                 <div className="flex-1 py-3 pr-3">
-                  <span className="text-xs font-medium text-violet-500">
+                  <span className="text-xs font-medium text-brand-blue">
                     {CATEGORIES.find((categoryItem) => categoryItem.id === topic.category)?.emoji}
                   </span>
                   <h3 className="mt-0.5 text-sm font-bold text-gray-900">{topic.title}</h3>
@@ -898,7 +898,7 @@ export function CreatePage() {
                 </div>
                 <div className="flex items-center pr-3">
                   {loadingSourcePostId === (topic.postId ?? topic.id) ? (
-                    <span className="text-xs font-medium text-violet-500">Loading...</span>
+                    <span className="text-xs font-medium text-brand-blue">Loading...</span>
                   ) : (
                     <ChevronRight size={16} className="text-gray-400" />
                   )}
@@ -913,7 +913,7 @@ export function CreatePage() {
         <div className="space-y-4 px-4 pt-4 pb-8">
           <div className="flex gap-1.5">
             {[1, 2, 3].map((segment) => (
-              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-violet-500" : "bg-gray-200"}`} />
+              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`} />
             ))}
           </div>
           <p className="text-xs font-medium text-gray-400">Step 1 of 3 — Topic Info</p>
@@ -926,7 +926,7 @@ export function CreatePage() {
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="e.g. Best Movies of 2024"
-                className="mt-2 w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+                className="mt-2 w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
               />
             </div>
 
@@ -939,7 +939,7 @@ export function CreatePage() {
                     onClick={() => setCategory(categoryItem.id)}
                     className={`flex items-center gap-2 rounded-xl border-2 p-2.5 text-sm transition-all ${
                       category === categoryItem.id
-                        ? "border-violet-400 bg-violet-50 text-violet-700"
+                        ? "border-brand-blue/55 bg-brand-blue/10 text-brand-blue-dark"
                         : "border-gray-100 bg-gray-50 text-gray-700 hover:border-gray-200"
                     }`}
                   >
@@ -957,7 +957,7 @@ export function CreatePage() {
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder="What's this tier list about?"
                 rows={3}
-                className="mt-2 w-full resize-none rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+                className="mt-2 w-full resize-none rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-800 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
               />
             </div>
 
@@ -969,7 +969,7 @@ export function CreatePage() {
                   onClick={() => setItemFormat("text")}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
                     itemFormat === "text"
-                      ? "border-violet-400 bg-violet-50 font-semibold text-violet-700"
+                      ? "border-brand-blue/55 bg-brand-blue/10 font-semibold text-brand-blue-dark"
                       : "border-gray-100 text-gray-500 hover:border-gray-200"
                   }`}
                 >
@@ -979,7 +979,7 @@ export function CreatePage() {
                   onClick={() => setItemFormat("image")}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
                     itemFormat === "image"
-                      ? "border-violet-400 bg-violet-50 font-semibold text-violet-700"
+                      ? "border-brand-blue/55 bg-brand-blue/10 font-semibold text-brand-blue-dark"
                       : "border-gray-100 text-gray-500 hover:border-gray-200"
                   }`}
                 >
@@ -994,7 +994,7 @@ export function CreatePage() {
                 <button
                   onClick={() => setIsPublic(true)}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
-                    isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"
+                    isPublic ? "border-brand-blue/55 bg-brand-blue/10 text-brand-blue-dark" : "border-gray-100 text-gray-500"
                   }`}
                 >
                   <Globe size={15} /> Public
@@ -1002,7 +1002,7 @@ export function CreatePage() {
                 <button
                   onClick={() => setIsPublic(false)}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-2.5 text-sm transition-all ${
-                    !isPublic ? "border-violet-400 bg-violet-50 text-violet-700" : "border-gray-100 text-gray-500"
+                    !isPublic ? "border-brand-blue/55 bg-brand-blue/10 text-brand-blue-dark" : "border-gray-100 text-gray-500"
                   }`}
                 >
                   <Lock size={15} /> Private
@@ -1014,7 +1014,7 @@ export function CreatePage() {
           <button
             onClick={() => title && category && setStep(2)}
             disabled={!title || !category}
-            className="w-full rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="w-full rounded-2xl bg-brand-blue py-3.5 font-bold text-white shadow-lg transition-all hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next: Add Items →
           </button>
@@ -1025,7 +1025,7 @@ export function CreatePage() {
         <div className="space-y-4 px-4 pt-4 pb-8">
           <div className="flex gap-1.5">
             {[1, 2, 3].map((segment) => (
-              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-violet-500" : "bg-gray-200"}`} />
+              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`} />
             ))}
           </div>
           <p className="text-xs font-medium text-gray-400">Step 2 of 3 — Add Items</p>
@@ -1045,7 +1045,7 @@ export function CreatePage() {
                   value={newItemEmoji}
                   onChange={(event) => setNewItemEmoji(event.target.value)}
                   placeholder="🎬"
-                  className="w-12 rounded-xl border border-gray-100 bg-gray-50 py-2.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="w-12 rounded-xl border border-gray-100 bg-gray-50 py-2.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
                 />
                 <input
                   type="text"
@@ -1053,11 +1053,11 @@ export function CreatePage() {
                   onChange={(event) => setNewItemName(event.target.value)}
                   onKeyDown={(event) => event.key === "Enter" && addItem()}
                   placeholder="Item name (press Enter)"
-                  className="flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
                 />
                 <button
                   onClick={addItem}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500 text-white transition-colors hover:bg-violet-600"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-blue/100 text-white transition-colors hover:bg-brand-blue"
                 >
                   <Plus size={18} />
                 </button>
@@ -1069,7 +1069,7 @@ export function CreatePage() {
                   value={newItemName}
                   onChange={(event) => setNewItemName(event.target.value)}
                   placeholder="Item name *"
-                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
                 />
                 <div className="flex gap-2">
                   <input
@@ -1078,9 +1078,9 @@ export function CreatePage() {
                     onChange={(event) => setNewItemImageUrl(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && addItem()}
                     placeholder="Image URL (optional)"
-                    className="min-w-0 flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300"
+                    className="min-w-0 flex-1 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
                   />
-                  <label className="flex h-10 cursor-pointer items-center rounded-xl border border-violet-100 bg-violet-50 px-3 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-100">
+                  <label className="flex h-10 cursor-pointer items-center rounded-xl border border-brand-blue/15 bg-brand-blue/10 px-3 text-xs font-semibold text-brand-blue transition-colors hover:bg-brand-blue/15">
                     {uploadingImageTarget === "items" ? "Uploading..." : "Upload"}
                     <input
                       type="file"
@@ -1110,7 +1110,7 @@ export function CreatePage() {
                   )}
                   <button
                     onClick={addItem}
-                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-violet-500 text-white transition-colors hover:bg-violet-600"
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-brand-blue/100 text-white transition-colors hover:bg-brand-blue"
                   >
                     <Plus size={18} />
                   </button>
@@ -1179,7 +1179,7 @@ export function CreatePage() {
             <button
               onClick={() => items.length >= 2 && setStep(3)}
               disabled={items.length < 2}
-              className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex-1 rounded-2xl bg-brand-blue py-3.5 font-bold text-white shadow-lg transition-all hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-40"
             >
               Next: Rank →
             </button>
@@ -1191,20 +1191,20 @@ export function CreatePage() {
         <div className="space-y-4 px-4 pt-4 pb-8">
           <div className="flex gap-1.5">
             {[1, 2, 3].map((segment) => (
-              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-violet-500" : "bg-gray-200"}`} />
+              <div key={segment} className={`h-1 flex-1 rounded-full ${segment <= step ? "bg-brand-blue/100" : "bg-gray-200"}`} />
             ))}
           </div>
           <p className="text-xs font-medium text-gray-400">Step 3 of 3 — Build Your Ranking</p>
           {editingPostId && (
-            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Editing Your Ranking</p>
+            <div className="rounded-2xl border border-brand-blue/15 bg-brand-blue/10 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Editing Your Ranking</p>
               <p className="mt-1 text-sm font-semibold text-gray-900">{title}</p>
               <p className="mt-1 text-xs text-gray-500">Saving here updates the original post instead of creating a new one.</p>
             </div>
           )}
           {selectedSourcePostId && (
-            <div className="rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Ranking Existing Topic</p>
+            <div className="rounded-2xl border border-brand-blue/15 bg-brand-blue/10 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Ranking Existing Topic</p>
               <p className="mt-1 text-sm font-semibold text-gray-900">{title}</p>
               <p className="mt-1 text-xs text-gray-500">We pulled in the real item list so you can make your own ranking.</p>
             </div>
@@ -1218,7 +1218,7 @@ export function CreatePage() {
                 <div
                   key={tier.id}
                   data-rank-drop-zone={tier.id}
-                  className={`border-b border-gray-100 transition-colors last:border-0 ${isOver ? "bg-violet-50" : ""}`}
+                  className={`border-b border-gray-100 transition-colors last:border-0 ${isOver ? "bg-brand-blue/10" : ""}`}
                   onDragOver={(event) => {
                     event.preventDefault();
                     setDragOverId(tier.id);
@@ -1279,7 +1279,7 @@ export function CreatePage() {
                           />
                         ),
                       )}
-                      {isOver && tier.items.length === 0 && <span className="self-center text-xs italic text-violet-400">Drop here</span>}
+                      {isOver && tier.items.length === 0 && <span className="self-center text-xs italic text-brand-blue/70">Drop here</span>}
                     </div>
 
                     {tiers.length > 1 && (
@@ -1298,7 +1298,7 @@ export function CreatePage() {
 
             <button
               onClick={addTier}
-              className="flex w-full items-center justify-center gap-2 border-t border-gray-100 py-2.5 text-sm text-violet-500 transition-colors hover:bg-violet-50 hover:text-violet-700"
+              className="flex w-full items-center justify-center gap-2 border-t border-gray-100 py-2.5 text-sm text-brand-blue transition-colors hover:bg-brand-blue/10 hover:text-brand-blue-dark"
             >
               <Plus size={14} /> Add Tier
             </button>
@@ -1309,7 +1309,7 @@ export function CreatePage() {
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Unranked ({getUnrankedItems().length})</p>
               <button
                 onClick={() => setShowAddInRank(!showAddInRank)}
-                className="flex items-center gap-1 text-xs font-medium text-violet-500 transition-colors hover:text-violet-700"
+                className="flex items-center gap-1 text-xs font-medium text-brand-blue transition-colors hover:text-brand-blue-dark"
               >
                 <Plus size={13} />
                 Add item
@@ -1387,7 +1387,7 @@ export function CreatePage() {
 
           {pointerDrag && (
             <div
-              className="pointer-events-none fixed z-[70] max-w-[80vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-gray-800 shadow-2xl"
+              className="pointer-events-none fixed z-[70] max-w-[80vw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-brand-blue/25 bg-white px-3 py-2 text-xs font-bold text-gray-800 shadow-2xl"
               style={{ left: pointerDrag.x, top: pointerDrag.y }}
             >
               {itemFormat === "image" && pointerDrag.item.imageUrl ? (
@@ -1414,7 +1414,7 @@ export function CreatePage() {
             <button
               onClick={() => void handlePublish()}
               disabled={isPublishing}
-              className="flex-1 rounded-2xl bg-violet-600 py-3.5 font-bold text-white shadow-lg transition-all hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex-1 rounded-2xl bg-brand-blue py-3.5 font-bold text-white shadow-lg transition-all hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPublishing ? (editingPostId ? "Saving..." : "Publishing...") : editingPostId ? "Save changes" : "🚀 Publish"}
             </button>

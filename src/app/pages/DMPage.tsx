@@ -376,7 +376,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
           </p>
           <button
             onClick={() => router.push(loginPathForReturnTo(returnPath))}
-            className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+            className="mt-4 rounded-xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
           >
             Go to login
           </button>
@@ -415,7 +415,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
                 socketStatus === "connected"
                   ? "bg-green-50 text-green-600"
                   : socketStatus === "connecting"
-                    ? "bg-yellow-50 text-yellow-600"
+                    ? "bg-brand-yellow/15 text-brand-yellow-dark"
                     : "bg-gray-100 text-gray-500"
               }`}
             >
@@ -461,7 +461,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
                       <div
                         className={`rounded-2xl px-4 py-2.5 text-sm ${
                           message.mine
-                            ? "rounded-br-sm bg-violet-600 text-white"
+                            ? "rounded-br-sm bg-brand-blue text-white"
                             : "rounded-bl-sm bg-gray-100 text-gray-800"
                         }`}
                       >
@@ -483,7 +483,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
           {error ? <p className="mb-2 text-sm text-red-500">{error}</p> : null}
           <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-gray-400">Chatbox</p>
           <div className="flex items-center gap-2">
-            <button className="text-gray-400 transition-colors hover:text-violet-500" aria-label="Attach image">
+            <button className="text-gray-400 transition-colors hover:text-brand-blue" aria-label="Attach image">
               <ImageIcon size={20} />
             </button>
             <div className="flex flex-1 items-center gap-2 rounded-2xl bg-gray-100 px-4 py-2.5">
@@ -499,14 +499,14 @@ export function DMPage({ initialUsername }: DMPageProps) {
                 placeholder="Message..."
                 className="flex-1 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
               />
-              <button className="text-gray-400 transition-colors hover:text-yellow-500" aria-label="Emoji picker">
+              <button className="text-gray-400 transition-colors hover:text-brand-yellow" aria-label="Emoji picker">
                 <Smile size={18} />
               </button>
             </div>
             <button
               onClick={() => void handleSendMessage()}
               disabled={!newMessage.trim() || isSending}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-600 text-white transition-all hover:bg-violet-700 disabled:opacity-40"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-blue text-white transition-all hover:bg-brand-blue-dark disabled:opacity-40"
               aria-label="Send message"
             >
               <Send size={16} />
@@ -525,7 +525,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
             <h1 className="text-2xl font-black text-gray-900">Messages</h1>
             <button
               onClick={() => router.push("/search")}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-500 transition-colors hover:bg-violet-100"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15"
               aria-label="Find someone to message"
             >
               <Edit size={18} />
@@ -538,7 +538,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search messages..."
-              className="w-full rounded-2xl bg-gray-100 py-2.5 pr-4 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="w-full rounded-2xl bg-gray-100 py-2.5 pr-4 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
             />
           </div>
           {authError || error ? <p className="mt-3 text-sm text-red-500">{authError || error}</p> : null}
@@ -596,7 +596,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     {thread.unread > 0 ? (
-                      <span className="absolute top-[-4px] right-[-4px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-50 bg-violet-500 text-[9px] font-bold text-white">
+                      <span className="absolute top-[-4px] right-[-4px] flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-50 bg-brand-blue/100 text-[9px] font-bold text-white">
                         {thread.unread}
                       </span>
                     ) : null}

@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
+import { AppLogo } from "@/app/components/AppLogo";
 import { getSafeLoginNextPath } from "@/app/lib/navigation";
 import { isMockAuthEnabled, loginWithGoogleCredential, loginWithMockUser } from "@/app/lib/ranksterApi";
 import { useSession } from "@/app/lib/useMockSession";
@@ -78,17 +79,15 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center px-6 pb-12">
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg mb-4">
-            <Trophy size={32} className="text-white" />
-          </div>
+          <AppLogo size="lg" className="mb-4 shadow-lg" />
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Welcome back</h1>
           <p className="text-gray-400 text-sm mt-1">Log in to continue ranking</p>
         </div>
 
         <div className="space-y-3">
           {mockAuthEnabled ? (
-            <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-wider text-violet-500">Dev chat testing</p>
+            <div className="rounded-2xl border border-brand-blue/15 bg-white p-4 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Dev chat testing</p>
               <p className="mt-1 text-xs text-gray-500">
                 Pick one mock user here, then use an incognito/private window for the other user.
               </p>
@@ -100,8 +99,8 @@ export default function LoginPage() {
                     onClick={() => void handleMockLogin(user.username)}
                     className={`rounded-xl border px-3 py-2 text-left transition-all ${
                       session?.user.username === user.username
-                        ? "border-violet-300 bg-violet-50 text-violet-700"
-                        : "border-gray-100 bg-gray-50 text-gray-700 hover:border-violet-200"
+                        ? "border-brand-blue/35 bg-brand-blue/10 text-brand-blue-dark"
+                        : "border-gray-100 bg-gray-50 text-gray-700 hover:border-brand-blue/25"
                     }`}
                   >
                     <span className="block text-sm font-bold">{user.label}</span>
@@ -124,7 +123,7 @@ export default function LoginPage() {
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <div className="rounded-2xl border border-brand-yellow/35 bg-brand-yellow/15 px-4 py-3 text-sm text-brand-yellow-dark">
               Add <code className="font-mono text-xs">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> to enable Google sign-in.
             </div>
           )}
@@ -155,7 +154,7 @@ export default function LoginPage() {
               onChange={(e) => { setEmail(e.target.value); setError(""); }}
               placeholder="you@example.com"
               autoComplete="email"
-              className="w-full mt-2 bg-white rounded-xl px-4 py-3.5 text-sm text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all"
+              className="w-full mt-2 bg-white rounded-xl px-4 py-3.5 text-sm text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent transition-all"
             />
           </div>
 
@@ -168,7 +167,7 @@ export default function LoginPage() {
                 onChange={(e) => { setPassword(e.target.value); setError(""); }}
                 placeholder="••••••••"
                 autoComplete="current-password"
-                className="w-full bg-white rounded-xl px-4 py-3.5 pr-12 text-sm text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all"
+                className="w-full bg-white rounded-xl px-4 py-3.5 pr-12 text-sm text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent transition-all"
               />
               <button
                 type="button"
@@ -185,17 +184,17 @@ export default function LoginPage() {
           )}
 
           {isSigningIn && (
-            <p className="text-xs text-violet-600 font-medium">Signing you in with Google...</p>
+            <p className="text-xs text-brand-blue font-medium">Signing you in with Google...</p>
           )}
 
           <div className="flex justify-end">
-            <button type="button" className="text-xs text-violet-500 hover:text-violet-700 font-medium">
+            <button type="button" className="text-xs text-brand-blue hover:text-brand-blue-dark font-medium">
               Forgot password?
             </button>
           </div>
           <button
             type="submit"
-            className="w-full mt-6 bg-violet-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg"
+            className="w-full mt-6 bg-brand-blue text-white py-4 rounded-2xl font-bold text-base hover:bg-brand-blue-dark active:scale-[0.98] transition-all shadow-lg"
           >
             Continue with Email
           </button>
@@ -206,7 +205,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={() => router.push("/register")}
-            className="text-violet-600 font-bold hover:text-violet-700"
+            className="text-brand-blue font-bold hover:text-brand-blue-dark"
           >
             Sign up
           </button>

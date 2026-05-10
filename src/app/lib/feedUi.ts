@@ -197,7 +197,7 @@ export type UpdateRankPostInput = Pick<CreateRankInput, "title" | "category" | "
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   S: { bg: "bg-red-500", text: "text-white", border: "border-red-600" },
   A: { bg: "bg-orange-400", text: "text-white", border: "border-orange-500" },
-  B: { bg: "bg-yellow-400", text: "text-white", border: "border-yellow-500" },
+  B: { bg: "bg-brand-yellow", text: "text-white", border: "border-brand-yellow" },
   C: { bg: "bg-green-500", text: "text-white", border: "border-green-600" },
-  D: { bg: "bg-blue-500", text: "text-white", border: "border-blue-600" },
+  D: { bg: "bg-brand-blue", text: "text-white", border: "border-brand-blue-dark" },
 };

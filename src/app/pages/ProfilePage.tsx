@@ -189,7 +189,7 @@ export function ProfilePage() {
           <p className="text-sm text-gray-700">Sign in to see your profile, likes, and stats.</p>
           <button
             onClick={() => router.push("/login")}
-            className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+            className="mt-4 rounded-xl bg-brand-blue px-4 py-2 text-sm font-semibold text-white hover:bg-brand-blue-dark"
           >
             Go to login
           </button>
@@ -240,7 +240,7 @@ export function ProfilePage() {
       </div>
 
       <div className="bg-white">
-        <div className="relative h-28 overflow-hidden bg-gradient-to-br from-violet-500 via-purple-600 to-indigo-600">
+        <div className="relative h-28 overflow-hidden bg-gradient-to-br from-brand-blue via-brand-blue to-brand-yellow">
           <div className="absolute inset-0 opacity-20">
             {[...Array(6)].map((_, index) => (
               <div
@@ -268,7 +268,7 @@ export function ProfilePage() {
                 className="h-20 w-20 rounded-2xl object-cover ring-4 ring-white shadow-md"
               />
               {profileUser.verified ? (
-                <span className="absolute right-[-4px] bottom-[-4px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-violet-500">
+                <span className="absolute right-[-4px] bottom-[-4px] flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-brand-blue/100">
                   <span className="text-[10px] text-white">✓</span>
                 </span>
               ) : null}
@@ -285,7 +285,7 @@ export function ProfilePage() {
                 <>
                   <button
                     onClick={handleMessageProfile}
-                    className="flex items-center gap-1.5 rounded-xl bg-violet-50 px-4 py-2 text-sm font-bold text-violet-600 transition-all hover:bg-violet-100"
+                    className="flex items-center gap-1.5 rounded-xl bg-brand-blue/10 px-4 py-2 text-sm font-bold text-brand-blue transition-all hover:bg-brand-blue/15"
                   >
                     <MessageCircle size={15} />
                     Message
@@ -296,7 +296,7 @@ export function ProfilePage() {
                     className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
                       following
                         ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        : "bg-violet-600 text-white hover:bg-violet-700"
+                        : "bg-brand-blue text-white hover:bg-brand-blue-dark"
                     } ${isFollowUpdating ? "opacity-70" : ""}`}
                   >
                     {following ? <UserCheck size={15} /> : <UserPlus size={15} />}
@@ -311,7 +311,7 @@ export function ProfilePage() {
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-gray-900">{profileUser.displayName}</h2>
               {profileUser.verified ? (
-                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-600">Verified</span>
+                <span className="rounded-full bg-brand-blue/15 px-2 py-0.5 text-xs font-bold text-brand-blue">Verified</span>
               ) : null}
             </div>
             <p className="mb-2 text-sm text-gray-400">@{profileUser.username}</p>
@@ -340,7 +340,7 @@ export function ProfilePage() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 border-b-2 py-3 text-sm font-semibold transition-all ${
-                  activeTab === tab ? "border-violet-600 text-violet-600" : "border-transparent text-gray-400"
+                  activeTab === tab ? "border-brand-blue text-brand-blue" : "border-transparent text-gray-400"
                 }`}
               >
                 {tab}
@@ -361,7 +361,7 @@ export function ProfilePage() {
                 {isMe ? (
                   <button
                     onClick={() => router.push("/create")}
-                    className="mt-4 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-violet-700"
+                    className="mt-4 rounded-xl bg-brand-blue px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-brand-blue-dark"
                   >
                     Create your first ranking
                   </button>
@@ -375,13 +375,13 @@ export function ProfilePage() {
                   <div
                     key={post.id}
                     className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${
-                      isPinned ? "border-violet-300 ring-1 ring-violet-200" : "border-gray-100"
+                      isPinned ? "border-brand-blue/35 ring-1 ring-brand-blue/25" : "border-gray-100"
                     }`}
                   >
                     {isPinned ? (
                       <div className="flex items-center gap-1.5 px-3 pt-2.5 pb-0">
-                        <Pin size={11} className="text-violet-500" />
-                        <span className="text-[11px] font-semibold text-violet-500">Pinned ranking</span>
+                        <Pin size={11} className="text-brand-blue" />
+                        <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
                       </div>
                     ) : null}
                     <div className="relative">
@@ -399,7 +399,7 @@ export function ProfilePage() {
                         <button
                           onClick={() => void handlePinToggle(post.id)}
                           className={`absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-xl shadow-sm transition-all ${
-                            isPinned ? "bg-violet-500 text-white" : "bg-black/40 text-white hover:bg-black/60"
+                            isPinned ? "bg-brand-blue/100 text-white" : "bg-black/40 text-white hover:bg-black/60"
                           }`}
                           title={isPinned ? "Unpin" : "Pin to profile"}
                         >
@@ -457,10 +457,10 @@ export function ProfilePage() {
                   </div>
                   <button
                     onClick={() => toggleSave(post)}
-                    className="flex-shrink-0 self-center text-violet-500 hover:text-violet-700 transition-colors p-1"
+                    className="flex-shrink-0 self-center text-brand-blue hover:text-brand-blue-dark transition-colors p-1"
                     title="Remove from saved"
                   >
-                    <Bookmark size={18} className="fill-violet-500" />
+                    <Bookmark size={18} className="fill-brand-blue" />
                   </button>
                 </div>
               ))}
@@ -472,14 +472,14 @@ export function ProfilePage() {
           <div className="space-y-4">
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
-                <BarChart2 size={18} className="text-violet-500" />
+                <BarChart2 size={18} className="text-brand-blue" />
                 <h3 className="font-bold text-gray-900">Your Statistics</h3>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Total Rankings", value: profile.stats.totalRankings, emoji: "🏆", color: "text-violet-600" },
+                  { label: "Total Rankings", value: profile.stats.totalRankings, emoji: "🏆", color: "text-brand-blue" },
                   { label: "Total Likes", value: `${(profile.stats.totalLikes / 1000).toFixed(1)}k`, emoji: "❤️", color: "text-red-500" },
-                  { label: "Followers", value: formatFollowers(profile.stats.followers), emoji: "👥", color: "text-blue-500" },
+                  { label: "Followers", value: formatFollowers(profile.stats.followers), emoji: "👥", color: "text-brand-blue" },
                   { label: "Following", value: formatFollowers(profile.stats.following), emoji: "➡️", color: "text-green-500" },
                 ].map((stat) => (
                   <div key={stat.label} className="rounded-xl bg-gray-50 p-3">
@@ -502,7 +502,7 @@ export function ProfilePage() {
                       <span className="text-gray-400">{category.pct}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-gray-100">
-                      <div className="h-full rounded-full bg-violet-500" style={{ width: `${category.pct}%` }} />
+                      <div className="h-full rounded-full bg-brand-blue/100" style={{ width: `${category.pct}%` }} />
                     </div>
                   </div>
                 </div>

@@ -78,22 +78,22 @@ export interface TrendingTopic {
 export const TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
   S: { bg: "bg-red-500", text: "text-white", border: "border-red-600" },
   A: { bg: "bg-orange-400", text: "text-white", border: "border-orange-500" },
-  B: { bg: "bg-yellow-400", text: "text-white", border: "border-yellow-500" },
+  B: { bg: "bg-brand-yellow", text: "text-white", border: "border-brand-yellow" },
   C: { bg: "bg-green-500", text: "text-white", border: "border-green-600" },
-  D: { bg: "bg-blue-500", text: "text-white", border: "border-blue-600" },
+  D: { bg: "bg-brand-blue", text: "text-white", border: "border-brand-blue-dark" },
 };
 
 export const CATEGORIES = [
-  { id: "movies", name: "Movies & TV", emoji: "🎬", color: "bg-purple-100 text-purple-700" },
-  { id: "music", name: "Music", emoji: "🎵", color: "bg-pink-100 text-pink-700" },
+  { id: "movies", name: "Movies & TV", emoji: "🎬", color: "bg-brand-blue/10 text-brand-blue-dark" },
+  { id: "music", name: "Music", emoji: "🎵", color: "bg-brand-yellow/15 text-brand-yellow-dark" },
   { id: "food", name: "Food & Drinks", emoji: "🍕", color: "bg-orange-100 text-orange-700" },
   { id: "sports", name: "Sports", emoji: "🏀", color: "bg-green-100 text-green-700" },
-  { id: "gaming", name: "Gaming", emoji: "🎮", color: "bg-blue-100 text-blue-700" },
+  { id: "gaming", name: "Gaming", emoji: "🎮", color: "bg-brand-blue/10 text-brand-blue-dark" },
   { id: "anime", name: "Anime", emoji: "⛩️", color: "bg-red-100 text-red-700" },
   { id: "travel", name: "Travel", emoji: "✈️", color: "bg-cyan-100 text-cyan-700" },
   { id: "tech", name: "Tech", emoji: "💻", color: "bg-slate-100 text-slate-700" },
   { id: "fashion", name: "Fashion", emoji: "👗", color: "bg-rose-100 text-rose-700" },
-  { id: "books", name: "Books", emoji: "📚", color: "bg-amber-100 text-amber-700" },
+  { id: "books", name: "Books", emoji: "📚", color: "bg-brand-yellow/15 text-brand-yellow-dark" },
 ];
 
 export const USERS: User[] = [

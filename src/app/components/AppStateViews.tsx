@@ -1,4 +1,5 @@
-import { AlertTriangle, RefreshCcw, Trophy } from "lucide-react";
+import { AlertTriangle, RefreshCcw } from "lucide-react";
+import { AppLogo } from "./AppLogo";
 
 interface FeedSkeletonProps {
   count?: number;
@@ -46,9 +47,7 @@ export function AppLoadingState() {
         <div className="px-4 pt-12 pb-3">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100">
-                <Trophy size={16} className="text-violet-500" />
-              </div>
+              <AppLogo />
               <SkeletonBlock className="h-6 w-28" />
             </div>
             <div className="flex gap-2">
@@ -96,7 +95,7 @@ export function AppErrorState({
         {onRetry ? (
           <button
             onClick={onRetry}
-            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-violet-700"
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-blue px-5 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-blue-dark"
           >
             <RefreshCcw size={16} />
             Try again

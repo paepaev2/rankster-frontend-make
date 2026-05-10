@@ -23,10 +23,10 @@ export default function ProfileSettingsPage() {
         <button
           type="button"
           onClick={() => router.push("/profile/edit")}
-          className="flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-4 text-left shadow-sm transition-colors hover:border-violet-200 hover:bg-violet-50"
+          className="flex w-full items-center justify-between rounded-2xl border border-gray-100 bg-white px-4 py-4 text-left shadow-sm transition-colors hover:border-brand-blue/25 hover:bg-brand-blue/10"
         >
           <span className="flex items-center gap-3">
-            <span className="rounded-xl bg-violet-100 p-2 text-violet-600">
+            <span className="rounded-xl bg-brand-blue/15 p-2 text-brand-blue">
               <UserCog size={18} />
             </span>
             <span>

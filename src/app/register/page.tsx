@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trophy, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
+import { AppLogo } from "@/app/components/AppLogo";
 import { loginWithGoogleCredential } from "@/app/lib/ranksterApi";
 import { useSession } from "@/app/lib/useMockSession";
 
@@ -81,7 +82,7 @@ export default function RegisterPage() {
           onChange={(e) => { onChange(e.target.value); setErrors((prev) => ({ ...prev, [id]: "" })); }}
           placeholder={placeholder}
           autoComplete={id === "email" ? "email" : id === "username" ? "username" : id === "displayName" ? "name" : undefined}
-          className={`w-full bg-white rounded-xl px-4 py-3 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all ${errors[id] ? "border-red-300" : "border-gray-200"}`}
+          className={`w-full bg-white rounded-xl px-4 py-3 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent transition-all ${errors[id] ? "border-red-300" : "border-gray-200"}`}
         />
         {extra}
       </div>
@@ -100,9 +101,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex flex-col justify-center px-6 pb-12">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg mb-3">
-            <Trophy size={28} className="text-white" />
-          </div>
+          <AppLogo size="md" className="mb-3 shadow-lg" />
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Create account</h1>
           <p className="text-gray-400 text-sm mt-1">Start ranking everything</p>
         </div>
@@ -120,7 +119,7 @@ export default function RegisterPage() {
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <div className="rounded-2xl border border-brand-yellow/35 bg-brand-yellow/15 px-4 py-3 text-sm text-brand-yellow-dark">
               Add <code className="font-mono text-xs">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> to enable Google sign-up.
             </div>
           )}
@@ -156,7 +155,7 @@ export default function RegisterPage() {
                 onChange={(e) => { setPassword(e.target.value); setErrors((prev) => ({ ...prev, password: "" })); }}
                 placeholder="Min. 6 characters"
                 autoComplete="new-password"
-                className={`w-full bg-white rounded-xl px-4 py-3 pr-12 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all ${errors.password ? "border-red-300" : "border-gray-200"}`}
+                className={`w-full bg-white rounded-xl px-4 py-3 pr-12 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent transition-all ${errors.password ? "border-red-300" : "border-gray-200"}`}
               />
               <button
                 type="button"
@@ -178,16 +177,16 @@ export default function RegisterPage() {
               onKeyDown={(e) => e.key === "Enter" && handleRegister()}
               placeholder="••••••••"
               autoComplete="new-password"
-              className={`w-full mt-2 bg-white rounded-xl px-4 py-3 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent transition-all ${errors.confirmPassword ? "border-red-300" : "border-gray-200"}`}
+              className={`w-full mt-2 bg-white rounded-xl px-4 py-3 text-sm text-gray-800 border focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-transparent transition-all ${errors.confirmPassword ? "border-red-300" : "border-gray-200"}`}
             />
             {errors.confirmPassword && <p className="text-xs text-red-500 mt-1">{errors.confirmPassword}</p>}
           </div>
           {googleError && <p className="mt-3 text-xs text-red-500">{googleError}</p>}
-          {isSigningIn && <p className="mt-3 text-xs text-violet-600">Setting up your Google account...</p>}
+          {isSigningIn && <p className="mt-3 text-xs text-brand-blue">Setting up your Google account...</p>}
 
           <button
             type="submit"
-            className="w-full mt-6 bg-violet-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg"
+            className="w-full mt-6 bg-brand-blue text-white py-4 rounded-2xl font-bold text-base hover:bg-brand-blue-dark active:scale-[0.98] transition-all shadow-lg"
           >
             Continue with Email
           </button>
@@ -198,7 +197,7 @@ export default function RegisterPage() {
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="text-violet-600 font-bold hover:text-violet-700"
+            className="text-brand-blue font-bold hover:text-brand-blue-dark"
           >
             Log in
           </button>

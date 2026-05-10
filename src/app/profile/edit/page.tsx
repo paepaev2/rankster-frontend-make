@@ -142,7 +142,7 @@ export default function EditProfilePage() {
           <button
             onClick={handleSave}
             disabled={isSaving || isLoading}
-            className="text-sm font-bold text-violet-600 hover:text-violet-800 transition-colors"
+            className="text-sm font-bold text-brand-blue hover:text-brand-blue-dark transition-colors"
           >
             {saved ? "Saved ✓" : isSaving ? "Saving..." : "Save"}
           </button>
@@ -163,12 +163,12 @@ export default function EditProfilePage() {
               className="w-24 h-24 rounded-2xl object-cover ring-4 ring-white shadow-md"
               unoptimized
             />
-            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-violet-500 rounded-xl flex items-center justify-center border-2 border-white">
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-brand-blue/100 rounded-xl flex items-center justify-center border-2 border-white">
               <Camera size={14} className="text-white" />
             </div>
           </div>
           <p className="text-xs text-gray-400">Upload a photo or paste an image URL below</p>
-          <label className="cursor-pointer rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-violet-700">
+          <label className="cursor-pointer rounded-xl bg-brand-blue px-4 py-2 text-xs font-bold text-white shadow-sm transition-colors hover:bg-brand-blue-dark">
             {isUploading ? "Uploading..." : "Upload Photo"}
             <input
               type="file"
@@ -191,11 +191,11 @@ export default function EditProfilePage() {
               onChange={(e) => setAvatarInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && applyAvatarUrl()}
               placeholder="https://..."
-              className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-violet-300"
+              className="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
             />
             <button
               onClick={applyAvatarUrl}
-              className="px-3 py-2 bg-violet-100 text-violet-600 rounded-xl text-xs font-semibold hover:bg-violet-200 transition-colors"
+              className="px-3 py-2 bg-brand-blue/15 text-brand-blue rounded-xl text-xs font-semibold hover:bg-brand-blue/20 transition-colors"
             >
               Apply
             </button>
@@ -212,7 +212,7 @@ export default function EditProfilePage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={40}
-              className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:bg-white transition-all"
+              className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white transition-all"
             />
             <p className="text-[11px] text-gray-400 mt-1 text-right">{displayName.length}/40</p>
           </div>
@@ -235,7 +235,7 @@ export default function EditProfilePage() {
               rows={4}
               maxLength={160}
               placeholder="Tell the world what you rank..."
-              className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:bg-white transition-all resize-none"
+              className="w-full mt-2 bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-800 border border-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:bg-white transition-all resize-none"
             />
             <p className="text-[11px] text-gray-400 mt-1 text-right">{bio.length}/160</p>
           </div>
@@ -244,7 +244,7 @@ export default function EditProfilePage() {
         <button
           onClick={handleSave}
           disabled={isSaving || isLoading}
-          className="w-full bg-violet-600 text-white py-4 rounded-2xl font-bold text-base hover:bg-violet-700 active:scale-[0.98] transition-all shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full bg-brand-blue text-white py-4 rounded-2xl font-bold text-base hover:bg-brand-blue-dark active:scale-[0.98] transition-all shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saved ? "Saved ✓" : isSaving ? "Saving..." : "Save Changes"}
         </button>
