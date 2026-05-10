@@ -509,13 +509,7 @@ export function ProfilePage() {
                 const isPinned = pinnedPostId === post.id;
 
                 return (
-                  <div key={post.id} className="relative">
-                    {isPinned ? (
-                      <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-3 py-2">
-                        <Pin size={11} className="text-brand-blue" />
-                        <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
-                      </div>
-                    ) : null}
+                  <div key={post.id} className={`relative rounded-2xl ${isPinned ? "ring-2 ring-brand-blue" : ""}`}>
                     {isMe ? (
                       <button
                         onClick={() => void handlePinToggle(post.id)}
