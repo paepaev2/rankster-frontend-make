@@ -11,6 +11,61 @@ import type { ChatMessage, ChatSocketEvent, Message, MessageThreadDetail } from 
 
 type SocketStatus = "idle" | "connecting" | "connected" | "fallback";
 
+function parseTimestamp(timestamp: string) {
+  const parsed = new Date(timestamp);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isSameLocalDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+function formatMessageTimestamp(timestamp: string) {
+  if (!timestamp) {
+    return "";
+  }
+
+  const parsed = parseTimestamp(timestamp);
+  if (!parsed) {
+    return timestamp;
+  }
+
+  const now = new Date();
+  const options: Intl.DateTimeFormatOptions = isSameLocalDay(parsed, now)
+    ? { hour: "numeric", minute: "2-digit" }
+    : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" };
+
+  return new Intl.DateTimeFormat(undefined, options).format(parsed);
+}
+
+function formatThreadTimestamp(timestamp: string) {
+  if (!timestamp) {
+    return "";
+  }
+
+  const parsed = parseTimestamp(timestamp);
+  if (!parsed) {
+    return timestamp;
+  }
+
+  const now = new Date();
+  if (isSameLocalDay(parsed, now)) {
+    return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(parsed);
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameLocalDay(parsed, yesterday)) {
+    return "Yesterday";
+  }
+
+  return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(parsed);
+}
+
 function DMSkeletonBlock({ className }: { className: string }) {
   return <div className={`animate-pulse rounded-full bg-gray-100 ${className}`} />;
 }
@@ -101,7 +156,7 @@ function buildThreadSummary(thread: MessageThreadDetail): Message {
     id: thread.id,
     user: thread.user,
     lastMessage: lastMessage?.text ?? "Say hi to start the conversation",
-    timestamp: lastMessage?.timestamp ?? "now",
+    timestamp: lastMessage?.timestamp ?? "Now",
     unread: 0,
   };
 }
@@ -468,7 +523,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
                         {message.text}
                       </div>
                       <p className={`mt-1 text-[10px] text-gray-400 ${message.mine ? "text-right" : "text-left"}`}>
-                        {message.timestamp}
+                        {formatMessageTimestamp(message.timestamp)}
                       </p>
                     </div>
                   </div>
@@ -606,7 +661,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
                       <span className={`text-sm ${thread.unread > 0 ? "font-bold text-gray-900" : "font-semibold text-gray-700"}`}>
                         {thread.user.displayName}
                       </span>
-                      <span className="text-[10px] text-gray-400">{thread.timestamp}</span>
+                      <span className="text-[10px] text-gray-400">{formatThreadTimestamp(thread.timestamp)}</span>
                     </div>
                     <p className={`mt-0.5 truncate text-xs ${thread.unread > 0 ? "font-medium text-gray-700" : "text-gray-400"}`}>
                       {thread.lastMessage}
