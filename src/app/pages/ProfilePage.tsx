@@ -400,7 +400,7 @@ export function ProfilePage() {
                           </div>
                         </>
                       ) : (
-                        <div className="border-b border-gray-100 bg-gradient-to-br from-brand-blue/10 via-white to-brand-yellow/20 p-3">
+                        <div className="border-b border-gray-100 p-3">
                           <span className={`rounded-full px-2 py-0.5 text-[10px] ${category?.color || "bg-gray-100 text-gray-500"}`}>
                             {category?.emoji} {category?.name}
                           </span>

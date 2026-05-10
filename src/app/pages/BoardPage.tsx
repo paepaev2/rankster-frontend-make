@@ -104,7 +104,7 @@ export function BoardPage() {
                           </div>
                         </>
                       ) : (
-                        <div className="bg-gradient-to-br from-brand-blue/10 via-white to-brand-yellow/20 p-3">
+                        <div className="border-b border-gray-100 p-3">
                           <h3 className="text-sm font-black text-gray-900">{post.title}</h3>
                         </div>
                       )}

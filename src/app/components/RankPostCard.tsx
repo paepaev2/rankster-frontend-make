@@ -188,8 +188,7 @@ async function generateStoryImage(post: RankPost): Promise<Blob> {
   roundRect(ctx, CARD_X, CARD_Y, CARD_W, BANNER_H, { tl: CARD_R, tr: CARD_R, bl: 0, br: 0 });
   ctx.clip();
 
-  // Try cover image, fall back to gradient
-  const coverImg = await tryLoadImage(post.coverImage);
+  const coverImg = hasUsableCoverImage(post.coverImage) ? await tryLoadImage(post.coverImage) : null;
   if (coverImg) {
     ctx.drawImage(coverImg, CARD_X, CARD_Y, CARD_W, BANNER_H);
   } else {
@@ -845,12 +844,9 @@ export function RankPostCard({
             </div>
           </div>
         ) : (
-          <div className="mx-4 rounded-2xl border border-brand-blue/10 bg-gradient-to-br from-brand-blue/10 via-white to-brand-yellow/20 p-4">
-            <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${category?.color || "bg-gray-100 text-gray-600"}`}>
-              {category?.emoji} {category?.name}
-            </span>
-            <h3 className="mt-2 text-base font-black leading-tight text-gray-900">{post.title}</h3>
-            <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+          <div className="px-4 pb-1">
+            <h3 className="text-base font-black leading-tight text-gray-900">{post.title}</h3>
+            <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-500">
               <Users size={12} className="text-brand-blue/70" />
               <span>{formatCount(post.participantCount)} ranked this</span>
             </div>
