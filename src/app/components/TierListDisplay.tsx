@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState } from "react";
 import { TIER_COLORS, type TierData, type TierItem, type TierRow } from "../lib/feedUi";
 
@@ -83,11 +84,15 @@ export function TierListDisplay({ tiers, tierRows, compact = false }: TierListDi
                         className={`${imageItemClasses(compact)} group relative overflow-hidden rounded-xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-brand-blue/40 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand-blue/40`}
                         aria-label={`Preview ${item.name}`}
                       >
-                        <img
-                          src={item.imageUrl}
-                          alt={item.name}
-                          className={`${imageClasses(compact)} w-full object-cover`}
-                        />
+                        <span className={`relative block ${imageClasses(compact)} w-full`}>
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fill
+                            sizes={compact ? "72px" : "112px"}
+                            className="object-cover"
+                          />
+                        </span>
                         <span className="absolute inset-x-1 bottom-1 rounded-full bg-white/95 px-1.5 py-0.5 text-center text-[10px] font-bold leading-tight text-gray-800 shadow-sm line-clamp-2">
                           {item.name}
                         </span>
@@ -134,11 +139,15 @@ export function TierListDisplay({ tiers, tierRows, compact = false }: TierListDi
               Close
             </button>
             <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
-              <img
-                src={previewItem.imageUrl}
-                alt={previewItem.name}
-                className="max-h-[78vh] w-full object-contain bg-black"
-              />
+              <div className="relative h-[70vh] max-h-[78vh] w-full bg-black">
+                <Image
+                  src={previewItem.imageUrl}
+                  alt={previewItem.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  className="object-contain"
+                />
+              </div>
               <div className="px-4 py-3">
                 <p className="text-sm font-black text-gray-900">{previewItem.name}</p>
               </div>
