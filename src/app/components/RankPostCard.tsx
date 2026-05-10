@@ -397,7 +397,7 @@ export function RankPostCard({
   const category = CATEGORIES.find((c) => c.id === post.category);
   const hasCoverImage = hasUsableCoverImage(post.coverImage);
   const commentPreview = comments.slice(0, 2);
-  const hasPostActions = Boolean(onRankThis || post.canEdit);
+  const hasPostActions = Boolean(onTopicClick || onRankThis || post.canEdit);
 
   useEffect(() => {
     setPost(initialPost);
@@ -527,6 +527,11 @@ export function RankPostCard({
   const handleRankThisFromMenu = () => {
     setPostActionOpen(false);
     onRankThis?.(post.id);
+  };
+
+  const handleViewAllRankings = () => {
+    setPostActionOpen(false);
+    onTopicClick?.(post.topicId || post.id);
   };
 
   const handleStartEditPost = () => {
@@ -713,6 +718,17 @@ export function RankPostCard({
             <>
               <div className="fixed inset-0 z-10" onClick={() => setPostActionOpen(false)} />
               <div className="absolute right-0 top-8 z-20 min-w-[160px] overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl" role="menu">
+                {onTopicClick ? (
+                  <button
+                    type="button"
+                    onClick={handleViewAllRankings}
+                    className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+                    role="menuitem"
+                  >
+                    View all rankings
+                  </button>
+                ) : null}
+                {onTopicClick && (onRankThis || post.canEdit) ? <div className="my-1 h-px bg-gray-100" /> : null}
                 {onRankThis ? (
                   <button
                     type="button"

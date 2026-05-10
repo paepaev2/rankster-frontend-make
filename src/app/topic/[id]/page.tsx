@@ -31,7 +31,7 @@ export default function Topic() {
   }, [params.id]);
 
   if (!detail && !error) {
-    return <div className="px-4 pt-16 text-sm text-gray-500">Loading topic...</div>;
+    return <TopicPageSkeleton />;
   }
 
   if (error || !detail) {
@@ -57,7 +57,7 @@ export default function Topic() {
                 <ArrowLeft size={18} />
               </button>
               <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-white/70">Topic</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-white/70">All rankings</p>
                 <h1 className="mt-1 text-xl font-black leading-tight text-white">{detail.topic.title}</h1>
               </div>
             </div>
@@ -71,7 +71,7 @@ export default function Topic() {
               >
                 <ArrowLeft size={18} />
               </button>
-              <p className="text-xs font-bold uppercase tracking-wide text-brand-blue">Topic</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-blue">All rankings</p>
               <h1 className="mt-1 text-xl font-black leading-tight text-gray-900">{detail.topic.title}</h1>
             </div>
           )}
@@ -121,6 +121,55 @@ export default function Topic() {
               });
             }}
           />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TopicPageSkeleton() {
+  return (
+    <div className="min-h-screen bg-gray-50 px-4 pt-10 pb-24">
+      <div className="mx-auto max-w-lg space-y-4">
+        <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+          <div className="relative h-36 animate-pulse bg-gray-200">
+            <div className="absolute left-3 top-3 h-9 w-9 rounded-full bg-white/80" />
+            <div className="absolute bottom-4 left-4 right-4 space-y-2">
+              <div className="h-3 w-24 rounded-full bg-white/70" />
+              <div className="h-6 w-4/5 rounded-full bg-white/80" />
+            </div>
+          </div>
+          <div className="flex gap-4 border-t border-gray-100 px-4 py-3">
+            <div className="h-4 w-24 animate-pulse rounded-full bg-gray-100" />
+            <div className="h-4 w-16 animate-pulse rounded-full bg-gray-100" />
+          </div>
+        </div>
+
+        {Array.from({ length: 3 }, (_, index) => (
+          <div key={index} className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 animate-pulse rounded-full bg-gray-200" />
+                <div className="space-y-2">
+                  <div className="h-3 w-28 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-3 w-20 animate-pulse rounded-full bg-gray-100" />
+                </div>
+              </div>
+              <div className="h-7 w-7 animate-pulse rounded-full bg-gray-100" />
+            </div>
+            <div className="px-4 pb-3">
+              <div className="h-5 w-3/4 animate-pulse rounded-full bg-gray-200" />
+              <div className="mt-2 h-4 w-28 animate-pulse rounded-full bg-gray-100" />
+            </div>
+            <div className="space-y-2 px-4 pb-4">
+              {[100, 92, 80, 66].map((width) => (
+                <div key={width} className="flex items-center gap-2">
+                  <div className="h-8 w-8 animate-pulse rounded-lg bg-gray-200" />
+                  <div className="h-8 animate-pulse rounded-xl bg-gray-100" style={{ width: `${width}%` }} />
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
