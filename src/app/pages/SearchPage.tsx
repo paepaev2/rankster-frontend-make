@@ -299,62 +299,46 @@ function TopicCard({
   const hasCoverImage = hasUsableCoverImage(topic.coverImage);
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) {
-          return;
-        }
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
-      className="flex w-full gap-3 overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25 hover:shadow-md"
-    >
-      {hasCoverImage ? (
-        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl">
-          <Image src={topic.coverImage} alt={topic.title} fill className="object-cover" sizes="80px" />
-          <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-lg bg-black/60">
-            <span className="text-[9px] font-black text-white">#{index + 1}</span>
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 text-left shadow-sm transition-all hover:border-brand-blue/25 hover:shadow-md">
+      <button type="button" onClick={onOpen} className="flex w-full gap-3 text-left">
+        {hasCoverImage ? (
+          <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl">
+            <Image src={topic.coverImage} alt={topic.title} fill className="object-cover" sizes="80px" />
+            <div className="absolute top-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-lg bg-black/60">
+              <span className="text-[9px] font-black text-white">#{index + 1}</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-xs font-black text-brand-blue">
+            #{index + 1}
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <span className="text-xs font-medium text-brand-blue">
+            {category?.emoji} {category?.name}
+          </span>
+          <h3 className="mt-0.5 text-sm leading-tight font-bold text-gray-900">{topic.title}</h3>
+          <div className="mt-1.5 flex items-center gap-1">
+            <Users size={11} className="text-gray-400" />
+            <span className="text-xs text-gray-400">{formatCount(topic.participantCount)} ranked this</span>
+            <span className="ml-2 flex items-center gap-0.5 text-xs text-orange-500">
+              <TrendingUp size={11} />
+              Hot
+            </span>
           </div>
         </div>
-      ) : (
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-brand-blue/10 text-xs font-black text-brand-blue">
-          #{index + 1}
-        </div>
-      )}
-      <div className="min-w-0 flex-1">
-        <span className="text-xs font-medium text-brand-blue">
-          {category?.emoji} {category?.name}
-        </span>
-        <h3 className="mt-0.5 text-sm leading-tight font-bold text-gray-900">{topic.title}</h3>
-        <div className="mt-1.5 flex items-center gap-1">
-          <Users size={11} className="text-gray-400" />
-          <span className="text-xs text-gray-400">{formatCount(topic.participantCount)} ranked this</span>
-          <span className="ml-2 flex items-center gap-0.5 text-xs text-orange-500">
-            <TrendingUp size={11} />
-            Hot
-          </span>
-        </div>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          {topic.tags.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onTagClick(tag);
-              }}
-              onKeyDown={(event) => event.stopPropagation()}
-              className="rounded-full text-[10px] text-gray-400 transition-colors hover:text-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/25"
-            >
-              #{tag}
-            </button>
-          ))}
-        </div>
+      </button>
+      <div className={`mt-1.5 flex flex-wrap gap-1 ${hasCoverImage ? "ml-[92px]" : "ml-14"}`}>
+        {topic.tags.map((tag) => (
+          <button
+            key={tag}
+            type="button"
+            onClick={() => onTagClick(tag)}
+            className="rounded-full text-[10px] text-gray-400 transition-colors hover:text-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/25"
+          >
+            #{tag}
+          </button>
+        ))}
       </div>
     </div>
   );
