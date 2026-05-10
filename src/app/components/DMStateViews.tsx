@@ -1,3 +1,5 @@
+import { MobileTopBar } from "./MobileTopBar";
+
 function DMSkeletonBlock({ className }: { className: string }) {
   return <div className={`animate-pulse rounded-full bg-gray-100 ${className}`} />;
 }
@@ -5,15 +7,13 @@ function DMSkeletonBlock({ className }: { className: string }) {
 export function DMPageSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="px-4 pt-12 pb-4">
-          <div className="mb-3 flex items-center justify-between">
-            <DMSkeletonBlock className="h-8 w-32" />
-            <DMSkeletonBlock className="h-9 w-9 rounded-xl" />
-          </div>
-          <DMSkeletonBlock className="h-10 w-full rounded-2xl" />
+      <MobileTopBar>
+        <div className="mb-3 flex items-center justify-between">
+          <DMSkeletonBlock className="h-8 w-32" />
+          <DMSkeletonBlock className="h-9 w-9 rounded-xl" />
         </div>
-      </div>
+        <DMSkeletonBlock className="h-10 w-full rounded-2xl" />
+      </MobileTopBar>
       <DMThreadListSkeleton />
     </div>
   );

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
+import { MobileTopBar } from "../components/MobileTopBar";
 import { TierListDisplay } from "../components/TierListDisplay";
 import { hasUsableCoverImage, type RankPost, type TierData, type TierItem as FeedTierItem, type TierRow, type TrendingTopic } from "../lib/feedUi";
 import { createRankPost, ensureMockSession, fetchPost, fetchTrendingTopics, updateRankPost, uploadImage } from "../lib/ranksterApi";
@@ -826,23 +827,21 @@ export function CreatePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white">
-        <div className="flex items-center justify-between px-4 pt-12 pb-4">
-          <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
-            <X size={22} />
+      <MobileTopBar outerClassName="sticky top-0 z-40 border-b border-gray-100 bg-white" innerClassName="flex items-center justify-between px-4 pb-4">
+        <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+          <X size={22} />
+        </button>
+        <h1 className="text-base font-bold text-gray-900">
+          {editingPostId ? "Edit Tier List" : mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
+        </h1>
+        {mode !== "choose" ? (
+          <button onClick={handleReset} className="text-sm font-medium text-brand-blue">
+            {editingPostId ? "Cancel" : "Reset"}
           </button>
-          <h1 className="text-base font-bold text-gray-900">
-            {editingPostId ? "Edit Tier List" : mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
-          </h1>
-          {mode !== "choose" ? (
-            <button onClick={handleReset} className="text-sm font-medium text-brand-blue">
-              {editingPostId ? "Cancel" : "Reset"}
-            </button>
-          ) : (
-            <div className="w-8" />
-          )}
-        </div>
-      </div>
+        ) : (
+          <div className="w-8" />
+        )}
+      </MobileTopBar>
 
       {mode === "choose" && (
         <div className="space-y-4 px-4 pt-6 pb-8">

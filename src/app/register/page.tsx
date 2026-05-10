@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 import { AppLogo } from "@/app/components/AppLogo";
+import { MobileTopBar } from "@/app/components/MobileTopBar";
 import { loginWithGoogleCredential } from "@/app/lib/ranksterApi";
 import { useSession } from "@/app/lib/useMockSession";
 
@@ -92,11 +93,11 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <div className="px-4 pt-14 pb-4 flex items-center gap-3">
+      <MobileTopBar outerClassName="" innerClassName="px-4 pb-4 flex items-center gap-3">
         <button type="button" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
           <ArrowLeft size={22} />
         </button>
-      </div>
+      </MobileTopBar>
 
       <div className="flex-1 flex flex-col justify-center px-6 pb-12">
         {/* Logo */}

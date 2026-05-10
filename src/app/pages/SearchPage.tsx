@@ -4,6 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Flame, MessageCircle, Search, SlidersHorizontal, TrendingUp, Users, X } from "lucide-react";
+import { MobileTopBar } from "../components/MobileTopBar";
 import { messagePathForUsername } from "../lib/navigation";
 import { fetchCategories, fetchSearchOverview, fetchTrendingTopics } from "../lib/ranksterApi";
 import { hasUsableCoverImage, type Category, type SearchOverviewResponse, type TrendingTopic, type User } from "../lib/feedUi";
@@ -121,44 +122,42 @@ export function SearchPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="px-4 pt-12 pb-4">
-          <h1 className="mb-3 text-2xl font-black text-gray-900">Discover</h1>
-          <div className="relative">
-            <Search size={17} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(event) => {
-                setError(null);
+      <MobileTopBar>
+        <h1 className="mb-3 text-2xl font-black text-gray-900">Discover</h1>
+        <div className="relative">
+          <Search size={17} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(event) => {
+              setError(null);
+              setActiveCategory(null);
+              setIsFilterOpen(false);
+              setResults(null);
+              setQuery(event.target.value);
+            }}
+            placeholder="Search topics, people, categories..."
+            className="w-full rounded-2xl bg-gray-100 py-3 pr-10 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+          />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setResults(null);
                 setActiveCategory(null);
                 setIsFilterOpen(false);
-                setResults(null);
-                setQuery(event.target.value);
+                router.replace("/search", { scroll: false });
               }}
-              placeholder="Search topics, people, categories..."
-              className="w-full rounded-2xl bg-gray-100 py-3 pr-10 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-            />
-            {query ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setQuery("");
-                  setResults(null);
-                  setActiveCategory(null);
-                  setIsFilterOpen(false);
-                  router.replace("/search", { scroll: false });
-                }}
-                className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
-                aria-label="Clear search"
-              >
-                <X size={16} />
-              </button>
-            ) : null}
-          </div>
-          {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
+              className="absolute top-1/2 right-3.5 -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600"
+              aria-label="Clear search"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
         </div>
-      </div>
+        {error ? <p className="mt-3 text-sm text-red-500">{error}</p> : null}
+      </MobileTopBar>
 
       <div className="px-4 pb-6">
         {visibleUsers.length > 0 ? (

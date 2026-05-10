@@ -6,6 +6,7 @@ import { Bell, Flame } from "lucide-react";
 import { RankPostCard } from "../components/RankPostCard";
 import { AppErrorState, FeedSkeleton } from "../components/AppStateViews";
 import { AppLogo } from "../components/AppLogo";
+import { MobileTopBar } from "../components/MobileTopBar";
 import {
   type FeedScope,
   fetchMainFeed,
@@ -109,8 +110,7 @@ export function HomeFeed() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="px-4 pt-12 pb-0">
+      <MobileTopBar innerClassName="px-4 pb-0">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <AppLogo />
@@ -153,8 +153,7 @@ export function HomeFeed() {
               </button>
             ))}
           </div>
-        </div>
-      </div>
+      </MobileTopBar>
 
       <div className="px-4 py-4 space-y-4">
         {(isAuthLoading || isLoading) && (

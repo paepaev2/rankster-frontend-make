@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LogOut, UserCog } from "lucide-react";
+import { MobileTopBar } from "@/app/components/MobileTopBar";
 import { logout } from "@/app/lib/ranksterApi";
 
 export default function ProfileSettingsPage() {
@@ -9,15 +10,13 @@ export default function ProfileSettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white">
-        <div className="flex items-center justify-between px-4 pt-12 pb-4">
-          <button type="button" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
-            <ArrowLeft size={22} />
-          </button>
-          <h1 className="text-base font-bold text-gray-900">Settings</h1>
-          <div className="w-6" />
-        </div>
-      </div>
+      <MobileTopBar outerClassName="sticky top-0 z-40 border-b border-gray-100 bg-white" innerClassName="flex items-center justify-between px-4 pb-4">
+        <button type="button" onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+          <ArrowLeft size={22} />
+        </button>
+        <h1 className="text-base font-bold text-gray-900">Settings</h1>
+        <div className="w-6" />
+      </MobileTopBar>
 
       <div className="space-y-3 px-4 pt-6">
         <button

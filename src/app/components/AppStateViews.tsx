@@ -1,5 +1,6 @@
 import { AlertTriangle, RefreshCcw } from "lucide-react";
 import { AppLogo } from "./AppLogo";
+import { MobileTopBar } from "./MobileTopBar";
 
 interface FeedSkeletonProps {
   count?: number;
@@ -43,24 +44,22 @@ export function FeedSkeleton({ count = 3 }: FeedSkeletonProps) {
 export function AppLoadingState() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="px-4 pt-12 pb-3">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AppLogo />
-              <SkeletonBlock className="h-6 w-28" />
-            </div>
-            <div className="flex gap-2">
-              <SkeletonBlock className="h-9 w-9 rounded-xl" />
-              <SkeletonBlock className="h-9 w-9 rounded-xl" />
-            </div>
+      <MobileTopBar innerClassName="px-4 pb-3">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AppLogo />
+            <SkeletonBlock className="h-6 w-28" />
           </div>
-          <div className="flex gap-3">
-            <SkeletonBlock className="h-8 w-20 rounded-xl" />
-            <SkeletonBlock className="h-8 w-24 rounded-xl" />
+          <div className="flex gap-2">
+            <SkeletonBlock className="h-9 w-9 rounded-xl" />
+            <SkeletonBlock className="h-9 w-9 rounded-xl" />
           </div>
         </div>
-      </div>
+        <div className="flex gap-3">
+          <SkeletonBlock className="h-8 w-20 rounded-xl" />
+          <SkeletonBlock className="h-8 w-24 rounded-xl" />
+        </div>
+      </MobileTopBar>
       <div className="px-4 py-4">
         <FeedSkeleton />
       </div>

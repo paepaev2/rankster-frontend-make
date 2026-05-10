@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import NextImage from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera } from "lucide-react";
+import { MobileTopBar } from "@/app/components/MobileTopBar";
 import { USERS } from "@/app/data/mockData";
 import { ensureMockSession, fetchCurrentUserProfile, updateCurrentUserProfile, uploadImage } from "@/app/lib/ranksterApi";
 
@@ -133,21 +134,19 @@ export default function EditProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-100">
-        <div className="px-4 pt-12 pb-4 flex items-center justify-between">
-          <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
-            <ArrowLeft size={22} />
-          </button>
-          <h1 className="text-base font-bold text-gray-900">Edit Profile</h1>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || isLoading}
-            className="text-sm font-bold text-brand-blue hover:text-brand-blue-dark transition-colors"
-          >
-            {saved ? "Saved ✓" : isSaving ? "Saving..." : "Save"}
-          </button>
-        </div>
-      </div>
+      <MobileTopBar outerClassName="sticky top-0 z-40 bg-white border-b border-gray-100" innerClassName="px-4 pb-4 flex items-center justify-between">
+        <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+          <ArrowLeft size={22} />
+        </button>
+        <h1 className="text-base font-bold text-gray-900">Edit Profile</h1>
+        <button
+          onClick={handleSave}
+          disabled={isSaving || isLoading}
+          className="text-sm font-bold text-brand-blue hover:text-brand-blue-dark transition-colors"
+        >
+          {saved ? "Saved ✓" : isSaving ? "Saving..." : "Save"}
+        </button>
+      </MobileTopBar>
 
       <div className="px-4 pt-6 pb-12 space-y-6">
         {error && <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>}

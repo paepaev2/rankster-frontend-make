@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pin, Trophy, TrendingUp, Users, Heart, BarChart2, Lock, Globe } from "lucide-react";
 import { MY_RANKINGS, USERS, MOCK_POSTS } from "../data/mockData";
+import { MobileTopBar } from "../components/MobileTopBar";
 import { TierListDisplay } from "../components/TierListDisplay";
 import { hasUsableCoverImage } from "../lib/feedUi";
 
@@ -29,55 +30,53 @@ export function BoardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100">
-        <div className="px-4 pt-12 pb-0">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-black text-gray-900">My Board</h1>
-              <p className="text-xs text-gray-400 mt-0.5">All your rankings in one place</p>
-            </div>
-            <button
-              onClick={() => router.push("/profile")}
-              className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-brand-blue/25"
-            >
-              <img src={currentUser.avatar} alt="me" className="w-full h-full object-cover" />
-            </button>
+      <MobileTopBar innerClassName="px-4 pb-0">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-black text-gray-900">My Board</h1>
+            <p className="text-xs text-gray-400 mt-0.5">All your rankings in one place</p>
           </div>
+          <button
+            onClick={() => router.push("/profile")}
+            className="w-10 h-10 rounded-xl overflow-hidden ring-2 ring-brand-blue/25"
+          >
+            <img src={currentUser.avatar} alt="me" className="w-full h-full object-cover" />
+          </button>
+        </div>
 
-          {/* Quick Stats Bar */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-brand-blue/10 rounded-xl p-3 text-center">
-              <p className="text-lg font-black text-brand-blue-dark">{stats.totalRankings}</p>
-              <p className="text-[10px] text-brand-blue font-medium">Rankings</p>
-            </div>
-            <div className="bg-red-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-black text-red-500">{formatCount(stats.totalLikes)}</p>
-              <p className="text-[10px] text-red-400 font-medium">Total Likes</p>
-            </div>
-            <div className="bg-orange-50 rounded-xl p-3 text-center">
-              <p className="text-lg font-black text-orange-500">#{5}</p>
-              <p className="text-[10px] text-orange-400 font-medium">Leaderboard</p>
-            </div>
+        {/* Quick Stats Bar */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-brand-blue/10 rounded-xl p-3 text-center">
+            <p className="text-lg font-black text-brand-blue-dark">{stats.totalRankings}</p>
+            <p className="text-[10px] text-brand-blue font-medium">Rankings</p>
           </div>
-
-          {/* Tabs */}
-          <div className="flex gap-1 border-b border-gray-100">
-            {STAT_TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
-                  activeTab === tab
-                    ? "text-brand-blue border-brand-blue"
-                    : "text-gray-400 border-transparent"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="bg-red-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-black text-red-500">{formatCount(stats.totalLikes)}</p>
+            <p className="text-[10px] text-red-400 font-medium">Total Likes</p>
+          </div>
+          <div className="bg-orange-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-black text-orange-500">#{5}</p>
+            <p className="text-[10px] text-orange-400 font-medium">Leaderboard</p>
           </div>
         </div>
-      </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-gray-100">
+          {STAT_TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px ${
+                activeTab === tab
+                  ? "text-brand-blue border-brand-blue"
+                  : "text-gray-400 border-transparent"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      </MobileTopBar>
 
       <div className="px-4 py-4">
         {/* Rankings Tab */}

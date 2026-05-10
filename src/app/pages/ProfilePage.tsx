@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, BarChart2, Bookmark, Heart, MessageCircle, Pin, PinOff, Search, Settings, Share2, UserCheck, UserPlus, Users, X } from "lucide-react";
+import { MobileTopBar } from "../components/MobileTopBar";
 import { RankPostCard } from "../components/RankPostCard";
 import { hasUsableCoverImage, type ProfileResponse, type RankPost, type User } from "../lib/feedUi";
 import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
@@ -30,15 +31,13 @@ function ProfileSkeletonBlock({ className }: { className: string }) {
 function ProfilePageSkeleton() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
-        <div className="flex items-center justify-between px-4 pt-12 pb-3">
-          <ProfileSkeletonBlock className="h-6 w-24" />
-          <div className="flex gap-2">
-            <ProfileSkeletonBlock className="h-9 w-9 rounded-xl" />
-            <ProfileSkeletonBlock className="h-9 w-9 rounded-xl" />
-          </div>
+      <MobileTopBar outerClassName="sticky top-0 z-40 bg-white/90 backdrop-blur-md" innerClassName="flex items-center justify-between px-4 pb-3">
+        <ProfileSkeletonBlock className="h-6 w-24" />
+        <div className="flex gap-2">
+          <ProfileSkeletonBlock className="h-9 w-9 rounded-xl" />
+          <ProfileSkeletonBlock className="h-9 w-9 rounded-xl" />
         </div>
-      </div>
+      </MobileTopBar>
       <div className="bg-white">
         <div className="h-28 animate-pulse bg-gradient-to-br from-gray-100 to-gray-200" />
         <div className="px-4 pb-4">
@@ -334,34 +333,32 @@ export function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md">
-        <div className="flex items-center justify-between px-4 pt-12 pb-3">
+      <MobileTopBar outerClassName="sticky top-0 z-40 bg-white/90 backdrop-blur-md" innerClassName="flex items-center justify-between px-4 pb-3">
+        {isMe ? (
+          <span className="text-xl font-black text-gray-900">Profile</span>
+        ) : (
+          <button onClick={() => router.back()} className="text-gray-600" aria-label="Go back">
+            <ArrowLeft size={22} />
+          </button>
+        )}
+        {!isMe && (
+          <span className="text-base font-bold text-gray-900">@{profileUser.username}</span>
+        )}
+        <div className="flex items-center gap-1">
+          <button className="flex h-9 w-9 items-center justify-center text-gray-500 transition-colors hover:text-gray-700" aria-label="Share profile">
+            <Share2 size={19} />
+          </button>
           {isMe ? (
-            <span className="text-xl font-black text-gray-900">Profile</span>
-          ) : (
-            <button onClick={() => router.back()} className="text-gray-600" aria-label="Go back">
-              <ArrowLeft size={22} />
+            <button
+              onClick={() => router.push("/profile/settings")}
+              className="flex h-9 w-9 items-center justify-center text-gray-500 transition-colors hover:text-gray-700"
+              aria-label="Profile settings"
+            >
+              <Settings size={19} />
             </button>
-          )}
-          {!isMe && (
-            <span className="text-base font-bold text-gray-900">@{profileUser.username}</span>
-          )}
-          <div className="flex items-center gap-1">
-            <button className="flex h-9 w-9 items-center justify-center text-gray-500 transition-colors hover:text-gray-700" aria-label="Share profile">
-              <Share2 size={19} />
-            </button>
-            {isMe ? (
-              <button
-                onClick={() => router.push("/profile/settings")}
-                className="flex h-9 w-9 items-center justify-center text-gray-500 transition-colors hover:text-gray-700"
-                aria-label="Profile settings"
-              >
-                <Settings size={19} />
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
-      </div>
+      </MobileTopBar>
 
       <div className="bg-white">
         <div className="relative h-28 overflow-hidden bg-gradient-to-br from-brand-blue via-brand-blue to-brand-yellow">

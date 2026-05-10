@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Edit, Image as ImageIcon, Search, Send, Smile } from "lucide-react";
 import { DMConversationSkeleton, DMPageSkeleton, DMThreadListSkeleton } from "../components/DMStateViews";
+import { MobileTopBar } from "../components/MobileTopBar";
 import { loginPathForReturnTo, messagePathForUsername } from "../lib/navigation";
 import { fetchMessageThread, fetchMessageThreads, getMessageThreadSocketUrl, sendMessage, startMessageThread } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
@@ -366,7 +367,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
 
     return (
       <div className="fixed top-0 bottom-16 left-1/2 z-40 flex w-full max-w-lg -translate-x-1/2 flex-col overflow-hidden bg-white">
-        <div className="flex flex-shrink-0 items-center gap-3 border-b border-gray-100 bg-white/95 px-4 pt-12 pb-4 backdrop-blur-md">
+        <MobileTopBar outerClassName="flex-shrink-0 border-b border-gray-100 bg-white/95 backdrop-blur-md" innerClassName="flex items-center gap-3 px-4 pb-4">
           <button onClick={() => setActiveThreadId(null)} className="text-gray-500 transition-colors hover:text-gray-700" aria-label="Back to messages">
             <ArrowLeft size={22} />
           </button>
@@ -398,7 +399,7 @@ export function DMPage({ initialUsername }: DMPageProps) {
               {socketStatus === "connected" ? "Live" : socketStatus === "connecting" ? "Connecting" : "Realtime fallback"}
             </span>
           </div>
-        </div>
+        </MobileTopBar>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           {isThreadLoading ? (
@@ -495,31 +496,29 @@ export function DMPage({ initialUsername }: DMPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="px-4 pt-12 pb-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h1 className="text-2xl font-black text-gray-900">Messages</h1>
-            <button
-              onClick={() => router.push("/search")}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15"
-              aria-label="Find someone to message"
-            >
-              <Edit size={18} />
-            </button>
-          </div>
-          <div className="relative">
-            <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search messages..."
-              className="w-full rounded-2xl bg-gray-100 py-2.5 pr-4 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
-            />
-          </div>
-          {authError || error ? <p className="mt-3 text-sm text-red-500">{authError || error}</p> : null}
+      <MobileTopBar>
+        <div className="mb-3 flex items-center justify-between">
+          <h1 className="text-2xl font-black text-gray-900">Messages</h1>
+          <button
+            onClick={() => router.push("/search")}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15"
+            aria-label="Find someone to message"
+          >
+            <Edit size={18} />
+          </button>
         </div>
-      </div>
+        <div className="relative">
+          <Search size={16} className="absolute top-1/2 left-3.5 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search messages..."
+            className="w-full rounded-2xl bg-gray-100 py-2.5 pr-4 pl-10 text-sm text-gray-800 placeholder:text-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/30"
+          />
+        </div>
+        {authError || error ? <p className="mt-3 text-sm text-red-500">{authError || error}</p> : null}
+      </MobileTopBar>
 
       {isThreadsLoading ? (
         <DMThreadListSkeleton />

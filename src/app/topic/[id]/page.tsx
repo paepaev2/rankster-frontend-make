@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Layers, Users } from "lucide-react";
+import { MOBILE_TOP_SAFE_PADDING_CLASS } from "@/app/components/MobileTopBar";
 import { RankPostCard } from "@/app/components/RankPostCard";
 import { hasUsableCoverImage, type TopicDetailResponse } from "@/app/lib/feedUi";
 import { fetchTopicDetail } from "@/app/lib/ranksterApi";
@@ -41,7 +42,7 @@ export default function Topic() {
   const hasCoverImage = hasUsableCoverImage(detail.topic.coverImage);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-10 pb-24">
+    <div className={`min-h-screen bg-gray-50 px-4 ${MOBILE_TOP_SAFE_PADDING_CLASS} pb-24`}>
       <div className="mx-auto max-w-lg space-y-4">
         <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
           {hasCoverImage ? (
@@ -129,7 +130,7 @@ export default function Topic() {
 
 function TopicPageSkeleton() {
   return (
-    <div className="min-h-screen bg-gray-50 px-4 pt-10 pb-24">
+    <div className={`min-h-screen bg-gray-50 px-4 ${MOBILE_TOP_SAFE_PADDING_CLASS} pb-24`}>
       <div className="mx-auto max-w-lg space-y-4">
         <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
           <div className="relative h-36 animate-pulse bg-gray-200">

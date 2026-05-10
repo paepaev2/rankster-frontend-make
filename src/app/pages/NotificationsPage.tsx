@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Bell, CheckCheck, Trophy, UserPlus } from "lucide-react";
 import { AppErrorState } from "../components/AppStateViews";
+import { MobileTopBar } from "../components/MobileTopBar";
 import {
   fetchNotifications,
   getNotificationsSocketUrl,
@@ -254,34 +255,32 @@ export function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="px-4 pt-12 pb-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
-              aria-label="Go back"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-black text-gray-900">Notifications</h1>
-              <p className="text-xs font-medium text-gray-400">
-                {unreadCount > 0 ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You are all caught up"}
-              </p>
-            </div>
-            <button
-              onClick={() => void handleMarkAllRead()}
-              disabled={unreadCount === 0 || isMarkingAll}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15 disabled:opacity-40"
-              aria-label="Mark all notifications as read"
-            >
-              <CheckCheck size={19} />
-            </button>
+      <MobileTopBar>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.back()}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
+            aria-label="Go back"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-black text-gray-900">Notifications</h1>
+            <p className="text-xs font-medium text-gray-400">
+              {unreadCount > 0 ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"}` : "You are all caught up"}
+            </p>
           </div>
-          {authError || error ? <p className="mt-3 text-sm text-red-500">{authError || error}</p> : null}
+          <button
+            onClick={() => void handleMarkAllRead()}
+            disabled={unreadCount === 0 || isMarkingAll}
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-blue/10 text-brand-blue transition-colors hover:bg-brand-blue/15 disabled:opacity-40"
+            aria-label="Mark all notifications as read"
+          >
+            <CheckCheck size={19} />
+          </button>
         </div>
-      </div>
+        {authError || error ? <p className="mt-3 text-sm text-red-500">{authError || error}</p> : null}
+      </MobileTopBar>
 
       {isLoading ? (
         <NotificationSkeleton />

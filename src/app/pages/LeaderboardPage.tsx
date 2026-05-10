@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Crown, Minus, TrendingDown, TrendingUp, Trophy } from "lucide-react";
+import { MobileTopBar } from "../components/MobileTopBar";
 import { fetchCategories, fetchLeaderboardFiltered } from "../lib/ranksterApi";
 import { useMockSession } from "../lib/useMockSession";
 import type { Category, LeaderboardEntry } from "../lib/feedUi";
@@ -56,57 +57,55 @@ export function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur-md">
-        <div className="px-4 pt-12 pb-4">
-          <div className="mb-4 flex items-center gap-3">
-            <button onClick={() => router.back()} className="text-gray-500" aria-label="Go back">
-              <ArrowLeft size={22} />
-            </button>
-            <div>
-              <h1 className="text-xl font-black text-gray-900">Leaderboard</h1>
-              <p className="text-xs text-gray-400">Top rankers this week</p>
-            </div>
-          </div>
-
-          <div className="mb-3 flex rounded-xl bg-gray-100 p-1">
-            {TIME_FILTERS.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setTimeFilter(filter)}
-                className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
-                  timeFilter === filter ? "bg-white text-brand-blue-dark shadow-sm" : "text-gray-500"
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-
-          <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-            <button
-              onClick={() => setCategoryFilter("All")}
-              className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                categoryFilter === "All" ? "bg-brand-blue text-white" : "border border-gray-200 bg-white text-gray-500"
-              }`}
-            >
-              All
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setCategoryFilter(category.id)}
-                className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                  categoryFilter === category.id
-                    ? "bg-brand-blue text-white"
-                    : "border border-gray-200 bg-white text-gray-500"
-                }`}
-              >
-                {category.emoji} {category.name}
-              </button>
-            ))}
+      <MobileTopBar>
+        <div className="mb-4 flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-gray-500" aria-label="Go back">
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <h1 className="text-xl font-black text-gray-900">Leaderboard</h1>
+            <p className="text-xs text-gray-400">Top rankers this week</p>
           </div>
         </div>
-      </div>
+
+        <div className="mb-3 flex rounded-xl bg-gray-100 p-1">
+          {TIME_FILTERS.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setTimeFilter(filter)}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                timeFilter === filter ? "bg-white text-brand-blue-dark shadow-sm" : "text-gray-500"
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setCategoryFilter("All")}
+            className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+              categoryFilter === "All" ? "bg-brand-blue text-white" : "border border-gray-200 bg-white text-gray-500"
+            }`}
+          >
+            All
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setCategoryFilter(category.id)}
+              className={`flex-shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                categoryFilter === category.id
+                  ? "bg-brand-blue text-white"
+                  : "border border-gray-200 bg-white text-gray-500"
+              }`}
+            >
+              {category.emoji} {category.name}
+            </button>
+          ))}
+        </div>
+      </MobileTopBar>
 
       <div className="px-4 py-4">
         {error ? (
