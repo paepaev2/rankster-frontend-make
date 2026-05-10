@@ -19,6 +19,8 @@ export function SearchPage() {
   const [results, setResults] = useState<SearchOverviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
   const deferredQuery = useDeferredValue(query);
   const isSearching = deferredQuery.trim().length > 0;
 
@@ -27,6 +29,7 @@ export function SearchPage() {
     setActiveCategory(null);
     setResults(null);
     setError(null);
+    setIsFilterOpen(false);
   }, [searchParamQuery]);
 
   useEffect(() => {
@@ -47,6 +50,10 @@ export function SearchPage() {
         if (!cancelled) {
           setError(searchError instanceof Error ? searchError.message : "Failed to load search data.");
         }
+      } finally {
+        if (!cancelled) {
+          setIsInitialLoading(false);
+        }
       }
     }
 
@@ -61,10 +68,12 @@ export function SearchPage() {
     const normalizedQuery = deferredQuery.trim();
     if (!normalizedQuery) {
       setResults(null);
+      setIsSearchLoading(false);
       return;
     }
 
     let cancelled = false;
+    setIsSearchLoading(true);
     const handle = window.setTimeout(() => {
       void fetchSearchOverview(normalizedQuery)
         .then((response) => {
@@ -75,6 +84,11 @@ export function SearchPage() {
         .catch((searchError) => {
           if (!cancelled) {
             setError(searchError instanceof Error ? searchError.message : "Search failed.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsSearchLoading(false);
           }
         });
     }, 180);
@@ -95,6 +109,7 @@ export function SearchPage() {
   const visibleTopics = topicSource.filter((topic) => {
     return activeCategory === null || topic.category === activeCategory;
   });
+  const shouldShowTopicSkeletons = (!isSearching && isInitialLoading) || (isSearching && isSearchLoading);
 
   function openTagSearch(tag: string) {
     const normalizedTag = tag.replace(/^#+/, "").trim();
@@ -278,10 +293,8 @@ export function SearchPage() {
             </div>
           ) : null}
 
-          {isSearching && !results ? (
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center text-sm text-gray-500 shadow-sm">
-              Searching...
-            </div>
+          {shouldShowTopicSkeletons ? (
+            <TopicListSkeleton count={isSearching ? 3 : 5} />
           ) : visibleTopics.length === 0 ? (
             <div className="py-12 text-center">
               <span className="text-4xl">🔍</span>
@@ -304,6 +317,40 @@ export function SearchPage() {
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TopicListSkeleton({ count }: { count: number }) {
+  return (
+    <div className="space-y-3" aria-label="Loading topics">
+      {Array.from({ length: count }, (_, index) => (
+        <TopicCardSkeleton key={index} />
+      ))}
+    </div>
+  );
+}
+
+function TopicCardSkeleton() {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+      <div className="flex gap-3">
+        <div className="h-20 w-20 flex-shrink-0 animate-pulse rounded-xl bg-gray-100" />
+        <div className="min-w-0 flex-1 pt-0.5">
+          <div className="h-3 w-20 animate-pulse rounded-full bg-brand-blue/10" />
+          <div className="mt-2 h-4 w-11/12 animate-pulse rounded-full bg-gray-100" />
+          <div className="mt-1.5 h-4 w-7/12 animate-pulse rounded-full bg-gray-100" />
+          <div className="mt-3 flex items-center gap-2">
+            <div className="h-3 w-24 animate-pulse rounded-full bg-gray-100" />
+            <div className="h-3 w-10 animate-pulse rounded-full bg-orange-100" />
+          </div>
+        </div>
+      </div>
+      <div className="ml-[92px] mt-2 flex gap-1">
+        <div className="h-3 w-12 animate-pulse rounded-full bg-gray-100" />
+        <div className="h-3 w-16 animate-pulse rounded-full bg-gray-100" />
+        <div className="h-3 w-10 animate-pulse rounded-full bg-gray-100" />
       </div>
     </div>
   );
