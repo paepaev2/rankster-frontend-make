@@ -39,7 +39,7 @@ export default function Topic() {
       <div className="mx-auto max-w-lg">
         <RankPostCard
           post={post}
-          onProfileClick={() => router.push(`/profile/${post.user.username}`)}
+          onProfileClick={(user) => router.push(`/profile/${user.username}`)}
           onRankThis={(postId) => router.push(`/create?sourcePost=${encodeURIComponent(postId)}`)}
           onEditTierList={(postId) => router.push(`/create?editPost=${encodeURIComponent(postId)}`)}
           currentUser={session?.user}

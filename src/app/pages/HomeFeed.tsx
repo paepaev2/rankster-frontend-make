@@ -174,7 +174,7 @@ export function HomeFeed() {
           <RankPostCard
             key={post.id}
             post={post}
-            onProfileClick={() => navigate(`/profile/${post.user.username}`)}
+            onProfileClick={(user) => navigate(`/profile/${user.username}`)}
             onTopicClick={(postId) => navigate(`/topic/${postId}`)}
             onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
             onEditTierList={(postId) => navigate(`/create?editPost=${encodeURIComponent(postId)}`)}

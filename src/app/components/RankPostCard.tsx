@@ -12,7 +12,7 @@ import { createComment, deleteRankPost, likeComment, likePost, unlikeComment, un
 
 interface RankPostCardProps {
   post: RankPost;
-  onProfileClick?: (userId: string) => void;
+  onProfileClick?: (user: User) => void;
   onTopicClick?: (postId: string) => void;
   onRankThis?: (postId: string) => void;
   onEditTierList?: (postId: string) => void;
@@ -656,7 +656,7 @@ export function RankPostCard({
       {/* Header */}
       <div className={`flex items-center justify-between ${hasCoverImage ? "p-4 pb-3" : "px-3 pt-3 pb-1"}`}>
         <div className="flex items-center gap-3">
-          <button onClick={() => onProfileClick?.(post.user.id)} className="relative">
+          <button onClick={() => onProfileClick?.(post.user)} className="relative">
             <Image
               src={post.user.avatar}
               alt={post.user.displayName}
@@ -673,7 +673,7 @@ export function RankPostCard({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => onProfileClick?.(post.user.id)}
+                onClick={() => onProfileClick?.(post.user)}
                 className="truncate font-semibold text-gray-900 text-sm hover:text-brand-blue transition-colors"
               >
                 {post.user.displayName}
@@ -893,34 +893,53 @@ export function RankPostCard({
       </div>
 
       {!showComments && commentPreview.length > 0 ? (
-        <button
-          type="button"
-          onClick={() => setShowComments(true)}
-          className="mx-4 mt-3 block w-[calc(100%-2rem)] rounded-2xl bg-gray-50/90 px-3 py-2.5 text-left transition-colors hover:bg-gray-100"
-        >
+        <div className="mx-4 mt-3 rounded-2xl bg-gray-50/90 px-3 py-2.5 text-left">
           <div className="space-y-2">
             {commentPreview.map((comment) => (
               <div key={comment.id} className="flex items-start gap-2">
-                <Image
-                  src={comment.user.avatar}
-                  alt={comment.user.displayName}
-                  width={22}
-                  height={22}
-                  className="h-[22px] w-[22px] flex-shrink-0 rounded-full object-cover"
-                />
-                <p className="min-w-0 flex-1 truncate text-xs text-gray-600">
-                  <span className="font-semibold text-gray-800">{comment.user.username}</span>{" "}
-                  {comment.text}
-                </p>
+                <button
+                  type="button"
+                  onClick={() => onProfileClick?.(comment.user)}
+                  className="h-[22px] w-[22px] flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-blue/35"
+                  aria-label={`Open ${comment.user.displayName}'s profile`}
+                >
+                  <Image
+                    src={comment.user.avatar}
+                    alt={comment.user.displayName}
+                    width={22}
+                    height={22}
+                    className="h-[22px] w-[22px] rounded-full object-cover"
+                  />
+                </button>
+                <div className="min-w-0 flex-1 truncate text-xs text-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => onProfileClick?.(comment.user)}
+                    className="font-semibold text-gray-800 transition-colors hover:text-brand-blue focus:outline-none focus:text-brand-blue"
+                  >
+                    {comment.user.username}
+                  </button>{" "}
+                  <button
+                    type="button"
+                    onClick={() => setShowComments(true)}
+                    className="text-left transition-colors hover:text-gray-800 focus:outline-none focus:text-gray-800"
+                  >
+                    {comment.text}
+                  </button>
+                </div>
               </div>
             ))}
           </div>
           {comments.length > commentPreview.length ? (
-            <p className="mt-2 text-[11px] font-semibold text-brand-blue">
+            <button
+              type="button"
+              onClick={() => setShowComments(true)}
+              className="mt-2 text-[11px] font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark"
+            >
               View all {formatCount(comments.length)} comments
-            </p>
+            </button>
           ) : null}
-        </button>
+        </div>
       ) : null}
 
       {/* IG generating overlay */}
@@ -1073,16 +1092,29 @@ export function RankPostCard({
           {comments.length > 0 ? (
             comments.map((comment) => (
               <div key={comment.id} className="flex gap-2.5">
-                <Image
-                  src={comment.user.avatar}
-                  alt={comment.user.displayName}
-                  width={28}
-                  height={28}
-                  className="h-7 w-7 rounded-full object-cover flex-shrink-0"
-                />
+                <button
+                  type="button"
+                  onClick={() => onProfileClick?.(comment.user)}
+                  className="h-7 w-7 flex-shrink-0 rounded-full focus:outline-none focus:ring-2 focus:ring-brand-blue/35"
+                  aria-label={`Open ${comment.user.displayName}'s profile`}
+                >
+                  <Image
+                    src={comment.user.avatar}
+                    alt={comment.user.displayName}
+                    width={28}
+                    height={28}
+                    className="h-7 w-7 rounded-full object-cover"
+                  />
+                </button>
                 <div className="bg-gray-50 rounded-xl px-3 py-2 flex-1">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-800">{comment.user.username}</span>
+                    <button
+                      type="button"
+                      onClick={() => onProfileClick?.(comment.user)}
+                      className="text-xs font-semibold text-gray-800 transition-colors hover:text-brand-blue focus:outline-none focus:text-brand-blue"
+                    >
+                      {comment.user.username}
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleCommentLike(comment)}
