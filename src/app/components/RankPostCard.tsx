@@ -951,7 +951,7 @@ export function RankPostCard({
                     onClick={() => onProfileClick?.(comment.user)}
                     className="text-xs font-semibold text-gray-800 transition-colors hover:text-brand-blue focus:outline-none focus:text-brand-blue"
                   >
-                    {comment.user.username}
+                    {comment.user.displayName || comment.user.username}
                   </button>{" "}
                   <button
                     type="button"
@@ -1147,7 +1147,7 @@ export function RankPostCard({
                       onClick={() => onProfileClick?.(comment.user)}
                       className="text-xs font-semibold text-gray-800 transition-colors hover:text-brand-blue focus:outline-none focus:text-brand-blue"
                     >
-                      {comment.user.username}
+                      {comment.user.displayName || comment.user.username}
                     </button>
                     <button
                       type="button"
