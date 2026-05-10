@@ -397,6 +397,7 @@ export function RankPostCard({
   const category = CATEGORIES.find((c) => c.id === post.category);
   const hasCoverImage = hasUsableCoverImage(post.coverImage);
   const commentPreview = comments.slice(0, 2);
+  const hasPostActions = Boolean(onRankThis || post.canEdit);
 
   useEffect(() => {
     setPost(initialPost);
@@ -521,6 +522,11 @@ export function RankPostCard({
     } catch {
       // ignore
     }
+  };
+
+  const handleRankThisFromMenu = () => {
+    setPostActionOpen(false);
+    onRankThis?.(post.id);
   };
 
   const handleStartEditPost = () => {
@@ -692,25 +698,42 @@ export function RankPostCard({
         </div>
         <div className="relative">
           <button
-            onClick={() => post.canEdit && setPostActionOpen(!postActionOpen)}
-            className="text-gray-400 hover:text-gray-600 p-1"
-            aria-label={post.canEdit ? "Open post actions" : "More post options"}
-            aria-expanded={post.canEdit ? postActionOpen : undefined}
+            type="button"
+            onClick={() => hasPostActions && setPostActionOpen((isOpen) => !isOpen)}
+            disabled={!hasPostActions}
+            className="p-1 text-gray-400 transition-colors hover:text-gray-600 disabled:cursor-default disabled:opacity-50"
+            aria-label={hasPostActions ? "Open post actions" : "More post options"}
+            aria-expanded={hasPostActions ? postActionOpen : undefined}
+            aria-haspopup={hasPostActions ? "menu" : undefined}
           >
             <MoreHorizontal size={18} />
           </button>
-          {post.canEdit && postActionOpen && (
+          {hasPostActions && postActionOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setPostActionOpen(false)} />
-              <div className="absolute right-0 top-8 z-20 min-w-[160px] overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
-                <button
-                  type="button"
-                  onClick={handleStartEditPost}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                >
-                  Edit post
-                </button>
-                {onEditTierList ? (
+              <div className="absolute right-0 top-8 z-20 min-w-[160px] overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 shadow-xl" role="menu">
+                {onRankThis ? (
+                  <button
+                    type="button"
+                    onClick={handleRankThisFromMenu}
+                    className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-brand-blue-dark transition-colors hover:bg-brand-blue/10"
+                    role="menuitem"
+                  >
+                    Rank this
+                  </button>
+                ) : null}
+                {onRankThis && post.canEdit ? <div className="my-1 h-px bg-gray-100" /> : null}
+                {post.canEdit ? (
+                  <button
+                    type="button"
+                    onClick={handleStartEditPost}
+                    className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                    role="menuitem"
+                  >
+                    Edit post
+                  </button>
+                ) : null}
+                {post.canEdit && onEditTierList ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -718,18 +741,22 @@ export function RankPostCard({
                       onEditTierList(post.id);
                     }}
                     className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                    role="menuitem"
                   >
                     Edit tier list
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={handleDeletePost}
-                  disabled={isPostDeleting}
-                  className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isPostDeleting ? "Deleting..." : "Delete post"}
-                </button>
+                {post.canEdit ? (
+                  <button
+                    type="button"
+                    onClick={handleDeletePost}
+                    disabled={isPostDeleting}
+                    className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    role="menuitem"
+                  >
+                    {isPostDeleting ? "Deleting..." : "Delete post"}
+                  </button>
+                ) : null}
               </div>
             </>
           )}
