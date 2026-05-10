@@ -71,6 +71,91 @@ function StepProgress({ step }: { step: number }) {
   );
 }
 
+function CreateSkeletonBlock({ className }: { className: string }) {
+  return <div className={`animate-pulse rounded-full bg-gray-100 ${className}`} />;
+}
+
+function CreateRankStepSkeleton({ variant }: { variant: "rank" | "edit" }) {
+  return (
+    <div className="space-y-4 px-4 pt-4 pb-8">
+      <StepProgress step={3} />
+      <p className="text-xs font-medium text-gray-400">Step 3 of 4 — Build Your Ranking</p>
+
+      <div className="rounded-2xl border border-brand-blue/15 bg-brand-blue/10 px-4 py-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">
+          {variant === "edit" ? "Loading Your Ranking" : "Loading Existing Topic"}
+        </p>
+        <CreateSkeletonBlock className="mt-2 h-4 w-44" />
+        <CreateSkeletonBlock className="mt-2 h-3 w-64 max-w-full" />
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+        {DEFAULT_TIERS.map((tier, index) => (
+          <div key={tier.id} className="border-b border-gray-100 last:border-0">
+            <div className="flex min-h-[56px] items-stretch">
+              <div className={`${TIER_COLOR_PALETTE[index % TIER_COLOR_PALETTE.length]} flex min-w-[3.5rem] items-center justify-center px-2`}>
+                <span className="text-sm font-black text-white">{tier.label}</span>
+              </div>
+              <div className="flex min-w-0 flex-1 items-center gap-2 p-2">
+                <CreateSkeletonBlock className="h-7 w-20 rounded-xl" />
+                <CreateSkeletonBlock className="h-7 w-28 rounded-xl" />
+                {index < 3 ? <CreateSkeletonBlock className="h-7 w-16 rounded-xl" /> : null}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <CreateSkeletonBlock className="h-3 w-28" />
+          <CreateSkeletonBlock className="h-3 w-16" />
+        </div>
+        <div className="flex min-h-[52px] gap-2 overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-white p-2">
+          <CreateSkeletonBlock className="h-8 w-24 rounded-xl" />
+          <CreateSkeletonBlock className="h-8 w-20 rounded-xl" />
+          <CreateSkeletonBlock className="h-8 w-28 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateDeepLinkError({
+  message,
+  onBack,
+  onRetry,
+}: {
+  message: string;
+  onBack: () => void;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="px-4 pt-4 pb-8">
+      <div className="rounded-2xl border border-red-100 bg-white p-5 text-center shadow-sm">
+        <p className="text-sm font-semibold text-gray-900">Could not load this tier list.</p>
+        <p className="mt-2 text-sm leading-6 text-red-500">{message}</p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex-1 rounded-2xl border border-gray-200 bg-white py-3 text-sm font-bold text-gray-600"
+          >
+            Go back
+          </button>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="flex-1 rounded-2xl bg-brand-blue py-3 text-sm font-bold text-white"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function createDefaultTiers(): Tier[] {
   return DEFAULT_TIERS.map((tier) => ({ ...tier, items: [] }));
 }
@@ -436,6 +521,8 @@ export function CreatePage() {
   );
   const selectedCategory = CATEGORIES.find((categoryItem) => categoryItem.id === category);
   const hasCoverPreview = hasUsableCoverImage(coverImage);
+  const sourcePostParam = searchParams.get("sourcePost");
+  const editPostParam = searchParams.get("editPost");
 
   useEffect(() => {
     let cancelled = false;
@@ -519,26 +606,24 @@ export function CreatePage() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get("editPost")) {
+    if (editPostParam) {
       return;
     }
 
-    const sourcePostId = searchParams.get("sourcePost");
-    if (!sourcePostId || sourcePostId === selectedSourcePostId || loadingSourcePostId === sourcePostId) {
+    if (!sourcePostParam || publishError || sourcePostParam === selectedSourcePostId || loadingSourcePostId === sourcePostParam) {
       return;
     }
 
-    void loadSourcePost(sourcePostId);
-  }, [loadSourcePost, loadingSourcePostId, searchParams, selectedSourcePostId]);
+    void loadSourcePost(sourcePostParam);
+  }, [editPostParam, loadSourcePost, loadingSourcePostId, publishError, selectedSourcePostId, sourcePostParam]);
 
   useEffect(() => {
-    const editPostId = searchParams.get("editPost");
-    if (!editPostId || editPostId === editingPostId || loadingEditPostId === editPostId) {
+    if (!editPostParam || publishError || editPostParam === editingPostId || loadingEditPostId === editPostParam) {
       return;
     }
 
-    void loadEditPost(editPostId);
-  }, [editingPostId, loadEditPost, loadingEditPostId, searchParams]);
+    void loadEditPost(editPostParam);
+  }, [editingPostId, editPostParam, loadEditPost, loadingEditPostId, publishError]);
 
   const uploadListImage = async (file: File, target: ImageUploadTarget) => {
     setImageUploadError(null);
@@ -824,6 +909,50 @@ export function CreatePage() {
       setIsPublishing(false);
     }
   };
+
+  const isSourceDeepLinkPending = Boolean(
+    sourcePostParam && !editPostParam && (selectedSourcePostId !== sourcePostParam || mode !== "create-new"),
+  );
+  const isEditDeepLinkPending = Boolean(editPostParam && (editingPostId !== editPostParam || mode !== "create-new"));
+  const isDeepLinkPending = isSourceDeepLinkPending || isEditDeepLinkPending;
+  const activeDeepLinkId = editPostParam ?? sourcePostParam;
+  const activeDeepLinkVariant = isEditDeepLinkPending ? "edit" : "rank";
+  const isDeepLinkLoading =
+    loadingSourcePostId === activeDeepLinkId ||
+    loadingEditPostId === activeDeepLinkId ||
+    (isDeepLinkPending && !publishError);
+
+  if (isDeepLinkPending) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MobileTopBar outerClassName="sticky top-0 z-40 border-b border-gray-100 bg-white" innerClassName="flex items-center justify-between px-4 pb-4">
+          <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700">
+            <X size={22} />
+          </button>
+          <h1 className="text-base font-bold text-gray-900">
+            {activeDeepLinkVariant === "edit" ? "Edit Tier List" : "Rank a Topic"}
+          </h1>
+          <div className="w-8" />
+        </MobileTopBar>
+
+        {isDeepLinkLoading || !activeDeepLinkId ? (
+          <CreateRankStepSkeleton variant={activeDeepLinkVariant} />
+        ) : (
+          <CreateDeepLinkError
+            message={publishError || "Failed to load that tier list."}
+            onBack={() => router.back()}
+            onRetry={() => {
+              if (editPostParam) {
+                void loadEditPost(editPostParam);
+              } else if (sourcePostParam) {
+                void loadSourcePost(sourcePostParam);
+              }
+            }}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
