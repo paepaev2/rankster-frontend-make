@@ -511,7 +511,7 @@ export function ProfilePage() {
                 return (
                   <div key={post.id} className="relative">
                     {isPinned ? (
-                      <div className="mb-2 flex items-center gap-1.5 rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-3 py-2">
+                      <div className="absolute left-3 top-3 z-10 flex items-center gap-1.5 rounded-xl border border-brand-blue/25 bg-brand-blue/10 px-3 py-2">
                         <Pin size={11} className="text-brand-blue" />
                         <span className="text-[11px] font-semibold text-brand-blue">Pinned ranking</span>
                       </div>
@@ -519,9 +519,7 @@ export function ProfilePage() {
                     {isMe ? (
                       <button
                         onClick={() => void handlePinToggle(post.id)}
-                        className={`absolute right-14 z-10 flex h-8 w-8 items-center justify-center rounded-xl shadow-sm transition-all ${
-                          isPinned ? "top-14" : "top-3"
-                        } ${
+                        className={`absolute right-14 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl shadow-sm transition-all ${
                           isPinned ? "bg-brand-blue/100 text-white" : "bg-black/40 text-white hover:bg-black/60"
                         }`}
                         title={isPinned ? "Unpin" : "Pin to profile"}
