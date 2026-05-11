@@ -72,6 +72,24 @@ export const MOCK_RANK_CAMPAIGNS: MockRankCampaign[] = [
         imageUrl:
           "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
       },
+      {
+        id: "campaign_bitelab_tom_yum_pasta",
+        name: "Tom Yum Cream Pasta",
+        imageUrl:
+          "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
+      },
+      {
+        id: "campaign_bitelab_salmon_bowl",
+        name: "Seared Salmon Rice Bowl",
+        imageUrl:
+          "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
+      },
+      {
+        id: "campaign_bitelab_matcha_cheesecake",
+        name: "Matcha Basque Cheesecake",
+        imageUrl:
+          "https://images.unsplash.com/photo-1488477181946-6428a0291777?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400",
+      },
     ],
   },
 ];
