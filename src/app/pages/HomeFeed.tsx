@@ -7,6 +7,8 @@ import { RankPostCard } from "../components/RankPostCard";
 import { AppErrorState, FeedSkeleton } from "../components/AppStateViews";
 import { AppLogo } from "../components/AppLogo";
 import { MobileTopBar } from "../components/MobileTopBar";
+import { SponsoredRankCampaignCard } from "../components/SponsoredRankCampaignCard";
+import { MOCK_RANK_CAMPAIGNS } from "../data/mockCampaigns";
 import {
   type FeedScope,
   fetchMainFeed,
@@ -21,6 +23,7 @@ const FILTER_TABS = [
   { label: "For You", scope: "for-you" as const },
   { label: "Following", scope: "following" as const },
 ];
+const FEED_CAMPAIGN = MOCK_RANK_CAMPAIGNS[0];
 
 export function HomeFeed() {
   const router = useRouter();
@@ -108,6 +111,9 @@ export function HomeFeed() {
     }
   }
 
+  const shouldShowCampaign = activeTab === "for-you" && !isAuthLoading && !authError && !isLoading && !error;
+  const campaignInsertIndex = feedItems.length > 0 ? Math.min(1, feedItems.length - 1) : -1;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <MobileTopBar innerClassName="px-4 pb-0">
@@ -169,27 +175,41 @@ export function HomeFeed() {
           />
         )}
 
-        {!isAuthLoading && !authError && !isLoading && !error && feedItems.map((post) => (
-          <RankPostCard
-            key={post.id}
-            post={post}
-            onProfileClick={(user) => navigate(`/profile/${user.username}`)}
-            onTopicClick={(postId) => navigate(`/topic/${postId}`)}
-            onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
-            onTagClick={(tag) => navigate(`/search?q=${encodeURIComponent(`#${tag}`)}`)}
-            onEditTierList={(postId) => navigate(`/create?editPost=${encodeURIComponent(postId)}`)}
-            currentUser={currentUser}
-            isAuthLoading={isAuthLoading}
-            onPostUpdated={(updatedPost) => {
-              setFeedItems((currentItems) =>
-                currentItems.map((currentPost) => (currentPost.id === updatedPost.id ? updatedPost : currentPost)),
-              );
-            }}
-            onPostDeleted={(postId) => {
-              setFeedItems((currentItems) => currentItems.filter((currentPost) => currentPost.id !== postId));
-            }}
-          />
+        {!isAuthLoading && !authError && !isLoading && !error && feedItems.map((post, index) => (
+          <React.Fragment key={post.id}>
+            <RankPostCard
+              post={post}
+              onProfileClick={(user) => navigate(`/profile/${user.username}`)}
+              onTopicClick={(postId) => navigate(`/topic/${postId}`)}
+              onRankThis={(postId) => navigate(`/create?sourcePost=${encodeURIComponent(postId)}`)}
+              onTagClick={(tag) => navigate(`/search?q=${encodeURIComponent(`#${tag}`)}`)}
+              onEditTierList={(postId) => navigate(`/create?editPost=${encodeURIComponent(postId)}`)}
+              currentUser={currentUser}
+              isAuthLoading={isAuthLoading}
+              onPostUpdated={(updatedPost) => {
+                setFeedItems((currentItems) =>
+                  currentItems.map((currentPost) => (currentPost.id === updatedPost.id ? updatedPost : currentPost)),
+                );
+              }}
+              onPostDeleted={(postId) => {
+                setFeedItems((currentItems) => currentItems.filter((currentPost) => currentPost.id !== postId));
+              }}
+            />
+            {shouldShowCampaign && index === campaignInsertIndex ? (
+              <SponsoredRankCampaignCard
+                campaign={FEED_CAMPAIGN}
+                onRank={() => navigate(`/create?campaign=${encodeURIComponent(FEED_CAMPAIGN.id)}`)}
+              />
+            ) : null}
+          </React.Fragment>
         ))}
+
+        {shouldShowCampaign && feedItems.length === 0 ? (
+          <SponsoredRankCampaignCard
+            campaign={FEED_CAMPAIGN}
+            onRank={() => navigate(`/create?campaign=${encodeURIComponent(FEED_CAMPAIGN.id)}`)}
+          />
+        ) : null}
 
         {!isAuthLoading && !authError && !isLoading && !error && feedItems.length === 0 && (
           <div className="bg-white border border-gray-100 rounded-2xl p-6 text-center text-sm text-gray-500">

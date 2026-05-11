@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronRight, Globe, GripVertical, Image, Lock, Plus, Search, Trash2, Type, X } from "lucide-react";
 import { CATEGORIES, TRENDING_TOPICS } from "../data/mockData";
+import { getMockRankCampaign, type MockRankCampaign } from "../data/mockCampaigns";
 import { MobileTopBar } from "../components/MobileTopBar";
 import { TierListDisplay } from "../components/TierListDisplay";
 import { hasUsableCoverImage, type RankPost, type TierData, type TierItem as FeedTierItem, type TierRow, type TrendingTopic } from "../lib/feedUi";
@@ -198,6 +199,15 @@ function mapPostTierData(post: RankPost): Tier[] {
     id: tier,
     label: tier,
     items: toTierItems(post.tiers[tier]),
+  }));
+}
+
+function mapCampaignItems(campaign: MockRankCampaign): TierItem[] {
+  return campaign.items.map((item) => ({
+    id: item.id,
+    name: item.name,
+    emoji: item.emoji,
+    imageUrl: item.imageUrl,
   }));
 }
 
@@ -481,24 +491,26 @@ function RankAddItemRow({
 export function CreatePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>("choose");
-  const [title, setTitle] = useState("");
-  const [coverImage, setCoverImage] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const campaignParam = searchParams.get("campaign");
+  const initialCampaign = getMockRankCampaign(campaignParam);
+  const [mode, setMode] = useState<Mode>(() => initialCampaign ? "create-new" : "choose");
+  const [title, setTitle] = useState(() => initialCampaign?.tierListName ?? "");
+  const [coverImage, setCoverImage] = useState(() => initialCampaign?.coverImage ?? "");
+  const [description, setDescription] = useState(() => initialCampaign?.defaultCaption ?? "");
+  const [category, setCategory] = useState(() => initialCampaign?.category ?? "");
   const [isPublic, setIsPublic] = useState(true);
-  const [itemFormat, setItemFormat] = useState<ItemFormat>("text");
+  const [itemFormat, setItemFormat] = useState<ItemFormat>(() => initialCampaign?.itemFormat ?? "text");
   const [newItemName, setNewItemName] = useState("");
   const [newItemEmoji, setNewItemEmoji] = useState("");
   const [newItemImageUrl, setNewItemImageUrl] = useState("");
-  const [items, setItems] = useState<TierItem[]>([]);
+  const [items, setItems] = useState<TierItem[]>(() => initialCampaign ? mapCampaignItems(initialCampaign) : []);
   const [tiers, setTiers] = useState<Tier[]>(createDefaultTiers);
   const [editingTierId, setEditingTierId] = useState<string | null>(null);
   const [showAddInRank, setShowAddInRank] = useState(false);
   const [rankNewName, setRankNewName] = useState("");
   const [rankNewEmoji, setRankNewEmoji] = useState("");
   const [rankNewImageUrl, setRankNewImageUrl] = useState("");
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => initialCampaign ? 3 : 1);
   const [searchTopic, setSearchTopic] = useState("");
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>(TRENDING_TOPICS);
   const [topicsError, setTopicsError] = useState<string | null>(null);
@@ -507,7 +519,8 @@ export function CreatePage() {
   const [loadingSourcePostId, setLoadingSourcePostId] = useState<string | null>(null);
   const [loadingEditPostId, setLoadingEditPostId] = useState<string | null>(null);
   const [selectedSourcePostId, setSelectedSourcePostId] = useState<string | null>(null);
-  const [selectedSourceTags, setSelectedSourceTags] = useState<string[]>([]);
+  const [selectedSourceTags, setSelectedSourceTags] = useState<string[]>(() => initialCampaign?.tags ?? []);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(() => initialCampaign?.id ?? null);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -523,6 +536,7 @@ export function CreatePage() {
   const hasCoverPreview = hasUsableCoverImage(coverImage);
   const sourcePostParam = searchParams.get("sourcePost");
   const editPostParam = searchParams.get("editPost");
+  const selectedCampaign = getMockRankCampaign(selectedCampaignId);
 
   useEffect(() => {
     let cancelled = false;
@@ -545,6 +559,34 @@ export function CreatePage() {
     };
   }, []);
 
+  useEffect(() => {
+    const campaign = getMockRankCampaign(campaignParam);
+    if (!campaign || campaign.id === selectedCampaignId) {
+      return;
+    }
+
+    setTitle(campaign.tierListName);
+    setCategory(campaign.category);
+    setCoverImage(campaign.coverImage);
+    setDescription(campaign.defaultCaption);
+    setIsPublic(true);
+    setItemFormat(campaign.itemFormat);
+    setItems(mapCampaignItems(campaign));
+    setTiers(createDefaultTiers());
+    setMode("create-new");
+    setStep(3);
+    setEditingPostId(null);
+    setSelectedSourcePostId(null);
+    setSelectedSourceTags(campaign.tags);
+    setSelectedCampaignId(campaign.id);
+    setPublishError(null);
+    setImageUploadError(null);
+    setShowAddInRank(false);
+    setRankNewName("");
+    setRankNewEmoji("");
+    setRankNewImageUrl("");
+  }, [campaignParam, selectedCampaignId]);
+
   const loadSourcePost = useCallback(async (postId: string) => {
     setLoadingSourcePostId(postId);
     setPublishError(null);
@@ -556,6 +598,7 @@ export function CreatePage() {
       setCoverImage(hasUsableCoverImage(post.coverImage) ? post.coverImage : "");
       setDescription("");
       setEditingPostId(null);
+      setSelectedCampaignId(null);
       setSelectedSourcePostId(post.id);
       setSelectedSourceTags(post.tags);
       setItemFormat(post.allItems.some((item) => item.imageUrl) ? "image" : "text");
@@ -586,6 +629,7 @@ export function CreatePage() {
       setCoverImage(hasUsableCoverImage(post.coverImage) ? post.coverImage : "");
       setDescription(post.description);
       setIsPublic(post.isPublic);
+      setSelectedCampaignId(null);
       setSelectedSourcePostId(null);
       setSelectedSourceTags(post.tags);
       setItemFormat(post.allItems.some((item) => item.imageUrl) ? "image" : "text");
@@ -866,6 +910,7 @@ export function CreatePage() {
     setSearchTopic("");
     setSelectedSourcePostId(null);
     setSelectedSourceTags([]);
+    setSelectedCampaignId(null);
     setEditingPostId(null);
     setPublishError(null);
     setImageUploadError(null);
@@ -961,7 +1006,7 @@ export function CreatePage() {
           <X size={22} />
         </button>
         <h1 className="text-base font-bold text-gray-900">
-          {editingPostId ? "Edit Tier List" : mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
+          {editingPostId ? "Edit Tier List" : selectedCampaign ? "Rank Campaign" : mode === "choose" ? "Create" : mode === "create-new" ? "New Tier List" : "Rank a Topic"}
         </h1>
         {mode !== "choose" ? (
           <button onClick={handleReset} className="text-sm font-medium text-brand-blue">
@@ -1428,6 +1473,19 @@ export function CreatePage() {
         <div className="space-y-4 px-4 pt-4 pb-8">
           <StepProgress step={step} />
           <p className="text-xs font-medium text-gray-400">Step 3 of 4 — Build Your Ranking</p>
+          {selectedCampaign && (
+            <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-amber-700">Sponsored Ranking Campaign</p>
+                <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-700">
+                  Ad
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-semibold text-gray-900">{selectedCampaign.sponsorName}</p>
+              <p className="mt-1 text-xs leading-5 text-gray-500">{selectedCampaign.objective}</p>
+              <p className="mt-1 text-[11px] leading-5 text-gray-400">{selectedCampaign.disclosure}</p>
+            </div>
+          )}
           {editingPostId && (
             <div className="rounded-2xl border border-brand-blue/15 bg-brand-blue/10 px-4 py-3">
               <p className="text-xs font-bold uppercase tracking-wider text-brand-blue">Editing Your Ranking</p>
